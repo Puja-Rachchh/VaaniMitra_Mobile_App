@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'screens/language_selection_screen.dart';
+import 'screens/level_selection_screen.dart';
+import 'screens/beginner_learning_screen.dart';
+import 'screens/fruits_learning_screen.dart';
+import 'screens/vegetables_learning_screen.dart';
 
 void main() {
   runApp(const VaaniMitraApp());
@@ -51,10 +56,16 @@ class VaaniMitraApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
-        '/language-selection': (context) => const LanguageSelectionScreen(),
+        '/language-selection': (context) => const NewLanguageSelectionScreen(),
+        '/level-selection': (context) => const LevelSelectionScreen(),
+        '/beginner-learning': (context) => const BeginnerLearningScreen(),
+        '/intermediate-learning': (context) => const IntermediateScreen(),
+        '/advanced-learning': (context) => const BeginnerScreen(),
         '/home': (context) => const HomeScreen(),
         '/beginner': (context) => const BeginnerScreen(),
         '/intermediate': (context) => const IntermediateScreen(),
+        '/fruits-learning': (context) => const FruitsLearningScreen(),
+        '/vegetables-learning': (context) => const VegetablesLearningScreen(),
       },
     );
   }
@@ -119,7 +130,9 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/login');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     });
   }
 
@@ -607,7 +620,7 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Welcome to Hindi Learning!',
+                  'Welcome to Learn all Indian Languages!',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -955,23 +968,27 @@ class IntermediateScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildLessonCard(
                   'Fruits',
-                  'Learn names of various fruits in Hindi',
+                  'Learn names of various fruits',
                   Icons.apple,
                   Colors.red,
-                  () {},
+                  () {
+                    Navigator.pushNamed(context, '/fruits-learning');
+                  },
                 ),
                 const SizedBox(height: 15),
                 _buildLessonCard(
                   'Vegetables',
-                  'Common vegetables and their Hindi names',
+                  'Learn names of various vegetables',
                   Icons.eco,
                   Colors.green,
-                  () {},
+                  () {
+                    Navigator.pushNamed(context, '/vegetables-learning');
+                  },
                 ),
                 const SizedBox(height: 15),
                 _buildLessonCard(
                   'Animals',
-                  'Domestic and wild animals in Hindi',
+                  'Learn names of various animals',
                   Icons.pets,
                   Colors.brown,
                   () {},
@@ -995,7 +1012,7 @@ class IntermediateScreen extends StatelessWidget {
                 const SizedBox(height: 15),
                 _buildLessonCard(
                   'Common Objects',
-                  'Everyday objects and their Hindi names',
+                  'Learn names of various objects',
                   Icons.home,
                   Colors.purple,
                   () {},
