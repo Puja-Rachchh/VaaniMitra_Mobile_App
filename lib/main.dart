@@ -4,6 +4,11 @@ import 'screens/level_selection_screen.dart';
 import 'screens/beginner_learning_screen.dart';
 import 'screens/fruits_learning_screen.dart';
 import 'screens/vegetables_learning_screen.dart';
+import 'screens/animals_learning_screen.dart';
+import 'screens/furniture_learning_screen.dart';
+import 'screens/places_learning_screen.dart';
+import 'screens/professionals_learning_screen.dart';
+import 'screens/relations_learning_screen.dart';
 
 void main() {
   runApp(const VaaniMitraApp());
@@ -15,10 +20,10 @@ class VaaniMitraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'VaaniMitra - Hindi Learning App',
+      title: 'VaaniMitra - Multilingual Learning App for Indian Languages',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        primaryColor: const Color(0xFF6C5CE7),
+        primaryColor: const Color(0xFF6C5CE7), 
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF6C5CE7),
           primary: const Color(0xFF6C5CE7),
@@ -66,6 +71,11 @@ class VaaniMitraApp extends StatelessWidget {
         '/intermediate': (context) => const IntermediateScreen(),
         '/fruits-learning': (context) => const FruitsLearningScreen(),
         '/vegetables-learning': (context) => const VegetablesLearningScreen(),
+        '/animals-learning': (context) => const AnimalsLearningScreen(),
+        '/furniture-learning': (context) => const FurnitureLearningScreen(),
+        '/places-learning': (context) => const PlacesLearningScreen(),
+        '/professionals-learning': (context) => const ProfessionalsLearningScreen(),
+        '/relations-learning': (context) => const RelationsLearningScreen(),
       },
     );
   }
@@ -167,7 +177,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
               SizedBox(height: 10),
               Text(
-                'Learn Hindi with Fun!',
+                'Multilingual Learning App for Indian Languages',
                 style: TextStyle(
                   fontSize: 18,
                   color: Color(0xFF2C3E50),
@@ -991,31 +1001,49 @@ class IntermediateScreen extends StatelessWidget {
                   'Learn names of various animals',
                   Icons.pets,
                   Colors.brown,
-                  () {},
+                  () {
+                    Navigator.pushNamed(context, '/animals-learning');
+                  },
                 ),
                 const SizedBox(height: 15),
                 _buildLessonCard(
-                  'Body Parts',
-                  'Human body parts and their names',
-                  Icons.accessibility,
-                  Colors.blue,
-                  () {},
+                  'Furniture',
+                  'Learn names of furniture items',
+                  Icons.chair,
+                  const Color(0xFF8B4513),
+                  () {
+                    Navigator.pushNamed(context, '/furniture-learning');
+                  },
                 ),
                 const SizedBox(height: 15),
                 _buildLessonCard(
-                  'Weather',
-                  'Weather conditions and seasons',
-                  Icons.wb_sunny,
-                  Colors.orange,
-                  () {},
+                  'Places',
+                  'Learn names of various places',
+                  Icons.location_on,
+                  const Color(0xFF9B59B6),
+                  () {
+                    Navigator.pushNamed(context, '/places-learning');
+                  },
                 ),
                 const SizedBox(height: 15),
                 _buildLessonCard(
-                  'Common Objects',
-                  'Learn names of various objects',
-                  Icons.home,
-                  Colors.purple,
-                  () {},
+                  'Professionals',
+                  'Learn names of different professions',
+                  Icons.work,
+                  const Color(0xFF3498DB),
+                  () {
+                    Navigator.pushNamed(context, '/professionals-learning');
+                  },
+                ),
+                const SizedBox(height: 15),
+                _buildLessonCard(
+                  'Relations',
+                  'Learn family relationship names',
+                  Icons.family_restroom,
+                  const Color(0xFFE74C3C),
+                  () {
+                    Navigator.pushNamed(context, '/relations-learning');
+                  },
                 ),
               ],
             ),
