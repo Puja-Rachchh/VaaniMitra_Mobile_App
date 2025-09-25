@@ -1,40 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
 
-class VegetablesLearningScreen extends StatefulWidget {
-  const VegetablesLearningScreen({super.key});
+class AnimalsLearningScreen extends StatefulWidget {
+  const AnimalsLearningScreen({super.key});
 
   @override
-  State<VegetablesLearningScreen> createState() => _VegetablesLearningScreenState();
+  State<AnimalsLearningScreen> createState() => _AnimalsLearningScreenState();
 }
 
-class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
+class _AnimalsLearningScreenState extends State<AnimalsLearningScreen> {
   String? knownLanguage;
   String? targetLanguage;
-  int currentVegetableIndex = 0;
-  List<Map<String, String>> vegetables = [];
+  int currentAnimalIndex = 0;
+  List<Map<String, String>> animals = [];
   bool isLoading = true;
   String? translatedDescription;
 
-  // Vegetables data with images and English names
-  final List<Map<String, String>> vegetablesData = [
-    {'name': 'Bitter Gourd', 'image': 'assets/vegetables/bitter_gourd.jpg'},
-    {'name': 'Bottle Gourd', 'image': 'assets/vegetables/bottle_gourd.jpeg'},
-    {'name': 'Brinjal', 'image': 'assets/vegetables/brinjal.jpg'},
-    {'name': 'Cabbage', 'image': 'assets/vegetables/cabbage.jpg'},
-    {'name': 'Capsicum', 'image': 'assets/vegetables/capcicum.jpeg'},
-    {'name': 'Cauliflower', 'image': 'assets/vegetables/cauliflower.jpeg'},
-    {'name': 'Chilli', 'image': 'assets/vegetables/chilli.jpg'},
-    {'name': 'Lady Finger', 'image': 'assets/vegetables/lady_finger.jpg'},
-    {'name': 'Mushroom', 'image': 'assets/vegetables/mushroom.jpeg'},
-    {'name': 'Onion', 'image': 'assets/vegetables/onion.jpeg'},
-    {'name': 'Potato', 'image': 'assets/vegetables/potato.jpg'},
-    {'name': 'Pumpkin', 'image': 'assets/vegetables/pumpkin.jpeg'},
-    {'name': 'Spinach', 'image': 'assets/vegetables/spinach.jpg'},
-    {'name': 'Tomato', 'image': 'assets/vegetables/tomato.jpeg'},
+  // Animals data with images and English names
+  final List<Map<String, String>> animalsData = [
+    {'name': 'Bear', 'image': 'assets/animals/bear.jpg'},
+    {'name': 'Butterfly', 'image': 'assets/animals/butterfly.jpg'},
+    {'name': 'Camel', 'image': 'assets/animals/camel.jpeg'},
+    {'name': 'Cat', 'image': 'assets/animals/cat.jpg'},
+    {'name': 'Cow', 'image': 'assets/animals/cow.jpg'},
+    {'name': 'Crane', 'image': 'assets/animals/crane.jpg'},
+    {'name': 'Crow', 'image': 'assets/animals/crow.jpeg'},
+    {'name': 'Dog', 'image': 'assets/animals/dog.jpg'},
+    {'name': 'Donkey', 'image': 'assets/animals/donkey.jpg'},
+    {'name': 'Duck', 'image': 'assets/animals/duck.jpg'},
+    {'name': 'Eagle', 'image': 'assets/animals/eagle.jpeg'},
+    {'name': 'Elephant', 'image': 'assets/animals/elephant.jpg'},
+    {'name': 'Fish', 'image': 'assets/animals/fish.jpeg'},
+    {'name': 'Flamingo', 'image': 'assets/animals/flamingo.jpg'},
+    {'name': 'Fox', 'image': 'assets/animals/fox.jpg'},
+    {'name': 'Goat', 'image': 'assets/animals/goat.jpeg'},
+    {'name': 'Hen', 'image': 'assets/animals/hen.jpg'},
+    {'name': 'Horse', 'image': 'assets/animals/horse.jpg'},
+    {'name': 'Kingfisher', 'image': 'assets/animals/kingfisher.jpg'},
+    {'name': 'Lion', 'image': 'assets/animals/lion.jpg'},
+    {'name': 'Monkey', 'image': 'assets/animals/monkey.jpg'},
+    {'name': 'Mouse', 'image': 'assets/animals/mouse.jpg'},
+    {'name': 'Owl', 'image': 'assets/animals/owl.jpg'},
+    {'name': 'Parrot', 'image': 'assets/animals/parrot.jpg'},
+    {'name': 'Peacock', 'image': 'assets/animals/peacock.jpg'},
+    {'name': 'Pigeon', 'image': 'assets/animals/pigeon.jpg'},
+    {'name': 'Rabbit', 'image': 'assets/animals/rabbit.jpg'},
+    {'name': 'Rhino', 'image': 'assets/animals/rhino.jpeg'},
+    {'name': 'Sheep', 'image': 'assets/animals/sheep.jpg'},
+    {'name': 'Snake', 'image': 'assets/animals/snake.jpg'},
+    {'name': 'Sparrow', 'image': 'assets/animals/sparrow.jpeg'},
+    {'name': 'Squirrel', 'image': 'assets/animals/squirrel.jpeg'},
+    {'name': 'Swan', 'image': 'assets/animals/swan.JPG'},
+    {'name': 'Tiger', 'image': 'assets/animals/tiger.jpg'},
+    {'name': 'Turtle', 'image': 'assets/animals/turtle.jpg'},
+    {'name': 'Woodpecker', 'image': 'assets/animals/woodpecker.jpeg'},
   ];
 
   @override
@@ -60,52 +83,52 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
           targetLanguage = target;
         });
       }
-      await _loadVegetables();
+      await _loadAnimals();
     }
   }
 
-  Future<void> _loadVegetables() async {
+  Future<void> _loadAnimals() async {
     if (mounted) {
       setState(() {
         isLoading = true;
       });
     }
 
-    List<Map<String, String>> vegetablesList = [];
-    for (var vegetable in vegetablesData) {
-      // Translate the vegetable name to target language
+    List<Map<String, String>> animalsList = [];
+    for (var animal in animalsData) {
+      // Translate the animal name to target language
       final targetName = await TranslationService.translateText(
-        vegetable['name']!, targetLanguage!, 'en'
+        animal['name']!, targetLanguage!, 'en'
       );
       
-      // Translate the vegetable name to known language
+      // Translate the animal name to known language
       final knownName = await TranslationService.translateText(
-        vegetable['name']!, knownLanguage!, 'en'
+        animal['name']!, knownLanguage!, 'en'
       );
       
-      vegetablesList.add({
-        'englishName': vegetable['name']!,
+      animalsList.add({
+        'englishName': animal['name']!,
         'targetName': targetName,
         'knownName': knownName,
-        'image': vegetable['image']!,
+        'image': animal['image']!,
       });
     }
 
     if (mounted) {
       setState(() {
-        vegetables = vegetablesList;
+        animals = animalsList;
         isLoading = false;
       });
     }
 
-    await _loadVegetableDescription();
+    await _loadAnimalDescription();
   }
 
-  Future<void> _loadVegetableDescription() async {
-    if (vegetables.isNotEmpty && currentVegetableIndex < vegetables.length) {
-      final currentVegetable = vegetables[currentVegetableIndex];
+  Future<void> _loadAnimalDescription() async {
+    if (animals.isNotEmpty && currentAnimalIndex < animals.length) {
+      final currentAnimal = animals[currentAnimalIndex];
       final description = await TranslationService.translateText(
-        'This is a ${currentVegetable['englishName']}. It is a healthy and nutritious vegetable.',
+        'This is a ${currentAnimal['englishName']}. It is a wonderful animal found in nature.',
         knownLanguage!,
         'en'
       );
@@ -117,34 +140,34 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
     }
   }
 
-  void _nextVegetable() {
-    if (currentVegetableIndex < vegetables.length - 1) {
+  void _nextAnimal() {
+    if (currentAnimalIndex < animals.length - 1) {
       if (mounted) {
         setState(() {
-          currentVegetableIndex++;
+          currentAnimalIndex++;
           translatedDescription = null;
         });
       }
-      _loadVegetableDescription();
+      _loadAnimalDescription();
     }
   }
 
-  void _previousVegetable() {
-    if (currentVegetableIndex > 0) {
+  void _previousAnimal() {
+    if (currentAnimalIndex > 0) {
       if (mounted) {
         setState(() {
-          currentVegetableIndex--;
+          currentAnimalIndex--;
           translatedDescription = null;
         });
       }
-      _loadVegetableDescription();
+      _loadAnimalDescription();
     }
   }
 
-  Future<void> _playVegetableSound() async {
-    if (vegetables.isNotEmpty && currentVegetableIndex < vegetables.length) {
-      final currentVegetable = vegetables[currentVegetableIndex]['targetName']!;
-      await TextToSpeechService.speakLetter(currentVegetable, targetLanguage!);
+  Future<void> _playAnimalSound() async {
+    if (animals.isNotEmpty && currentAnimalIndex < animals.length) {
+      final currentAnimal = animals[currentAnimalIndex]['targetName']!;
+      await TextToSpeechService.speakLetter(currentAnimal, targetLanguage!);
     }
   }
 
@@ -186,8 +209,8 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Learning Vegetables'),
-          backgroundColor: Colors.green.shade600,
+          title: const Text('Learning Animals'),
+          backgroundColor: Colors.brown.shade600,
           foregroundColor: Colors.white,
           leading: IconButton(
             onPressed: () {
@@ -216,25 +239,25 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
       );
     }
 
-    if (vegetables.isEmpty) {
+    if (animals.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Learning Vegetables'),
-          backgroundColor: Colors.green.shade600,
+          title: const Text('Learning Animals'),
+          backgroundColor: Colors.brown.shade600,
           foregroundColor: Colors.white,
         ),
         body: const Center(
-          child: Text('No vegetables data available.'),
+          child: Text('No animals data available.'),
         ),
       );
     }
 
-    final currentVegetable = vegetables[currentVegetableIndex];
+    final currentAnimal = animals[currentAnimalIndex];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Learning Vegetables'),
-        backgroundColor: Colors.green.shade600,
+        title: const Text('Learning Animals'),
+        backgroundColor: Colors.brown.shade600,
         foregroundColor: Colors.white,
         leading: IconButton(
           onPressed: () {
@@ -263,14 +286,14 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
           children: [
             // Progress indicator
             LinearProgressIndicator(
-              value: (currentVegetableIndex + 1) / vegetables.length,
+              value: (currentAnimalIndex + 1) / animals.length,
               backgroundColor: Colors.grey.shade300,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.brown.shade600),
             ),
             const SizedBox(height: 20),
             
             Text(
-              'Vegetable ${currentVegetableIndex + 1} of ${vegetables.length}',
+              'Animal ${currentAnimalIndex + 1} of ${animals.length}',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey.shade600,
@@ -278,16 +301,16 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
             ),
             const SizedBox(height: 30),
 
-            // Vegetable image with click-to-speak
+            // Animal image with click-to-speak
             GestureDetector(
-              onTap: _playVegetableSound,
+              onTap: _playAnimalSound,
               child: Container(
                 width: 250,
                 height: 250,
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: Colors.brown.shade50,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.shade300, width: 2),
+                  border: Border.all(color: Colors.brown.shade300, width: 2),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -295,19 +318,34 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(15),
                       child: Image.asset(
-                        currentVegetable['image']!,
+                        currentAnimal['image']!,
                         width: 180,
                         height: 180,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
+                          debugPrint('Error loading image: ${currentAnimal['image']!}');
+                          debugPrint('Error details: $error');
                           return Container(
                             width: 180,
                             height: 180,
                             color: Colors.grey.shade300,
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              size: 50,
-                              color: Colors.grey,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.image_not_supported,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Image not found',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -319,14 +357,14 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                       children: [
                         Icon(
                           Icons.volume_up,
-                          color: Colors.green.shade600,
+                          color: Colors.brown.shade600,
                           size: 20,
                         ),
                         const SizedBox(width: 5),
                         Text(
                           'Tap to hear',
                           style: TextStyle(
-                            color: Colors.green.shade600,
+                            color: Colors.brown.shade600,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -339,13 +377,13 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
             ),
             const SizedBox(height: 30),
 
-            // Vegetable names comparison
+            // Animal names comparison
             Row(
               children: [
                 Expanded(
                   child: Card(
                     elevation: 2,
-                    color: Colors.green.shade50,
+                    color: Colors.brown.shade50,
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -355,12 +393,12 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.green.shade600,
+                              color: Colors.brown.shade600,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            currentVegetable['targetName']!,
+                            currentAnimal['targetName']!,
                             style: _getLanguageTextStyle(targetLanguage, 24),
                             textAlign: TextAlign.center,
                           ),
@@ -388,7 +426,7 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            currentVegetable['knownName']!,
+                            currentAnimal['knownName']!,
                             style: _getLanguageTextStyle(knownLanguage, 24),
                             textAlign: TextAlign.center,
                           ),
@@ -439,7 +477,7 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                   SizedBox(
                     width: 100,
                     child: ElevatedButton(
-                      onPressed: currentVegetableIndex > 0 ? _previousVegetable : null,
+                      onPressed: currentAnimalIndex > 0 ? _previousAnimal : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade600,
                         foregroundColor: Colors.white,
@@ -459,9 +497,9 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                   SizedBox(
                     width: 80,
                     child: ElevatedButton(
-                      onPressed: _playVegetableSound,
+                      onPressed: _playAnimalSound,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: Colors.brown.shade600,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -479,9 +517,9 @@ class _VegetablesLearningScreenState extends State<VegetablesLearningScreen> {
                   SizedBox(
                     width: 80,
                     child: ElevatedButton(
-                      onPressed: currentVegetableIndex < vegetables.length - 1 ? _nextVegetable : null,
+                      onPressed: currentAnimalIndex < animals.length - 1 ? _nextAnimal : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: Colors.brown.shade600,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),

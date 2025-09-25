@@ -55,18 +55,22 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
     final target = await UserPreferences.getTargetLanguage();
     
     if (known != null && target != null) {
-      setState(() {
-        knownLanguage = known;
-        targetLanguage = target;
-      });
+      if (mounted) {
+        setState(() {
+          knownLanguage = known;
+          targetLanguage = target;
+        });
+      }
       await _loadFruits();
     }
   }
 
   Future<void> _loadFruits() async {
-    setState(() {
-      isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
     List<Map<String, String>> fruitsList = [];
     for (var fruit in fruitsData) {
@@ -88,10 +92,12 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
       });
     }
 
-    setState(() {
-      fruits = fruitsList;
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        fruits = fruitsList;
+        isLoading = false;
+      });
+    }
 
     await _loadFruitDescription();
   }
@@ -104,28 +110,34 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
         knownLanguage!,
         'en'
       );
-      setState(() {
-        translatedDescription = description;
-      });
+      if (mounted) {
+        setState(() {
+          translatedDescription = description;
+        });
+      }
     }
   }
 
   void _nextFruit() {
     if (currentFruitIndex < fruits.length - 1) {
-      setState(() {
-        currentFruitIndex++;
-        translatedDescription = null;
-      });
+      if (mounted) {
+        setState(() {
+          currentFruitIndex++;
+          translatedDescription = null;
+        });
+      }
       _loadFruitDescription();
     }
   }
 
   void _previousFruit() {
     if (currentFruitIndex > 0) {
-      setState(() {
-        currentFruitIndex--;
-        translatedDescription = null;
-      });
+      if (mounted) {
+        setState(() {
+          currentFruitIndex--;
+          translatedDescription = null;
+        });
+      }
       _loadFruitDescription();
     }
   }
