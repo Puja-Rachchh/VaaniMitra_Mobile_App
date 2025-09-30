@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
+import '../services/speech_recognition_service.dart';
+import '../widgets/quiz_widget.dart';
+import '../screens/quiz_results_screen.dart';
+import '../models/quiz_models.dart';
 
 class BeginnerLearningScreen extends StatefulWidget {
   const BeginnerLearningScreen({super.key});
@@ -18,17 +23,26 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
   List<Map<String, String>> letters = [];
   bool isLoading = true;
   String? translatedExplanation;
+  
+  // Speech recognition variables
+  bool _speechInitialized = false;
+  bool _isListening = false;
+  String _recognizedText = '';
+  PronunciationResult? _pronunciationResult;
+  bool _showPronunciationFeedback = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _initializeSpeechRecognition();
   }
 
   @override
   void dispose() {
     // Stop any ongoing TTS when leaving the screen
     TextToSpeechService.stop();
+    SpeechRecognitionService.dispose();
     super.dispose();
   }
 
@@ -176,6 +190,354 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
     }
   }
 
+  // Speech recognition methods
+  Future<void> _initializeSpeechRecognition() async {
+    try {
+      debugPrint('📱 Initializing speech recognition...');
+      
+      // Try primary initialization method first
+      debugPrint('📱 Trying primary initialization...');
+      _speechInitialized = await SpeechRecognitionService.initialize();
+      
+      // If primary failed, try basic initialization
+      if (!_speechInitialized) {
+        debugPrint('📱 Primary failed, trying basic initialization...');
+        _speechInitialized = await SpeechRecognitionService.initializeBasic();
+      }
+      
+      // If still failed, try with retries
+      if (!_speechInitialized) {
+        debugPrint('📱 Both methods failed, trying with retries...');
+        int attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts && !_speechInitialized) {
+          attempts++;
+          debugPrint('📱 Retry attempt $attempts/$maxAttempts');
+          
+          // Alternate between both methods
+          if (attempts % 2 == 1) {
+            _speechInitialized = await SpeechRecognitionService.initialize();
+          } else {
+            _speechInitialized = await SpeechRecognitionService.initializeBasic();
+          }
+          
+          if (!_speechInitialized && attempts < maxAttempts) {
+            debugPrint('📱 Retrying in 1 second...');
+            await Future.delayed(const Duration(seconds: 1));
+          }
+        }
+      }
+      
+      debugPrint('📱 Final initialization result: $_speechInitialized');
+      
+      if (mounted) {
+        setState(() {});
+      }
+      
+      if (!_speechInitialized) {
+        // Show more specific error message
+        _showErrorMessage('Speech recognition initialization failed after multiple attempts.\n\nPlease check:\n• Device supports speech recognition\n• Google app is installed and updated\n• Try restarting the app');
+      } else {
+        debugPrint('✅ Speech recognition successfully initialized!');
+      }
+    } catch (e) {
+      debugPrint('💥 Error initializing speech recognition: $e');
+      _showErrorMessage('Error initializing speech recognition: $e');
+    }
+  }
+
+  Future<void> _checkMicrophonePermission() async {
+    debugPrint('📱 Checking microphone permission and capabilities...');
+    
+    try {
+      // Perform comprehensive capability check
+      final capabilities = await SpeechRecognitionService.checkDeviceCapabilities();
+      
+      debugPrint('📱 Device capabilities: $capabilities');
+      
+      final permissionGranted = capabilities['permissionGranted'] as bool;
+      final speechAvailable = capabilities['speechToTextAvailable'] as bool;
+      final initSuccess = capabilities['initializationSuccess'] as bool;
+      final localesAvailable = capabilities['localesAvailable'] as bool;
+      final errors = capabilities['errorDetails'] as List<String>;
+      
+      String message = 'Device Check Results:\n';
+      message += '• Permission: ${permissionGranted ? "✅ Granted" : "❌ Denied"}\n';
+      message += '• Initialization: ${initSuccess ? "✅ Success" : "❌ Failed"}\n';
+      message += '• Service Available: ${speechAvailable ? "✅ Yes" : "❌ No"}\n';
+      message += '• Locales Available: ${localesAvailable ? "✅ Yes" : "❌ No"}\n';
+      
+      if (errors.isNotEmpty) {
+        message += '\nErrors:\n';
+        for (String error in errors) {
+          message += '• $error\n';
+        }
+      }
+      
+      // If everything looks good, test basic functionality
+      if (permissionGranted && initSuccess && speechAvailable) {
+        if (!_speechInitialized) {
+          message += '\nRetrying initialization...';
+          _showErrorMessage(message);
+          await _initializeSpeechRecognition();
+        } else {
+          message += '\nTesting basic speech functionality...';
+          _showErrorMessage(message);
+          
+          final testResult = await SpeechRecognitionService.testBasicListening();
+          if (testResult) {
+            message += '\n✅ Basic test successful!';
+          } else {
+            message += '\n❌ Basic test failed - speech service not working';
+          }
+          _showErrorMessage(message);
+        }
+      } else if (!permissionGranted) {
+        message += '\nPlease grant microphone permission in settings.';
+        _showErrorMessage(message);
+      } else if (!speechAvailable) {
+        message += '\nSpeech recognition not supported on this device.';
+        _showErrorMessage(message);
+      } else {
+        _showErrorMessage(message);
+      }
+      
+    } catch (e) {
+      debugPrint('💥 Error in capability check: $e');
+      _showErrorMessage('Error checking device capabilities: $e');
+    }
+  }
+
+  Future<void> _startListening() async {
+    debugPrint('📱 === BEGINNER SCREEN: START LISTENING ===');
+    debugPrint('📱 speechInitialized: $_speechInitialized');
+    debugPrint('📱 targetLanguage: $targetLanguage');
+    debugPrint('📱 isListening: $_isListening');
+    
+    if (!_speechInitialized) {
+      debugPrint('❌ Speech recognition not initialized');
+      _showErrorMessage('Speech recognition not initialized. Please restart the app.');
+      return;
+    }
+    
+    if (targetLanguage == null) {
+      debugPrint('❌ No target language selected');
+      _showErrorMessage('No target language selected');
+      return;
+    }
+
+    try {
+      debugPrint('📱 Resetting UI state...');
+      setState(() {
+        _isListening = false; // Reset listening state
+        _recognizedText = ''; // Clear previous results
+      });
+
+      debugPrint('📱 Calling SpeechRecognitionService.startListening...');
+      final success = await SpeechRecognitionService.startListening(
+        languageCode: targetLanguage!,
+        onResult: (text) {
+          debugPrint('📱 Speech result received in UI: "$text"');
+          if (mounted) {
+            setState(() {
+              _recognizedText = text;
+            });
+          }
+        },
+        onListening: (isListening) {
+          debugPrint('📱 Listening state changed: $isListening');
+          if (mounted) {
+            setState(() {
+              _isListening = isListening;
+            });
+          }
+        },
+        timeout: const Duration(seconds: 10),
+      );
+
+      debugPrint('📱 StartListening result: $success');
+
+      if (success) {
+        setState(() {
+          _isListening = true;
+        });
+        debugPrint('✅ Speech recognition started successfully in UI');
+      } else {
+        setState(() {
+          _isListening = false;
+        });
+        debugPrint('❌ Failed to start speech recognition');
+        _showErrorMessage('Failed to start speech recognition. Check logs for details.');
+      }
+    } catch (e) {
+      setState(() {
+        _isListening = false;
+      });
+      debugPrint('💥 Error in _startListening: $e');
+      debugPrint('💥 Error type: ${e.runtimeType}');
+      _showErrorMessage('Error starting speech recognition: $e');
+    }
+    debugPrint('📱 === BEGINNER SCREEN: START LISTENING COMPLETE ===');
+  }
+
+  Future<void> _stopListening() async {
+    try {
+      await SpeechRecognitionService.stopListening();
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+        if (_recognizedText.isNotEmpty) {
+          _checkPronunciation();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error stopping speech recognition: $e');
+    }
+  }
+
+  void _checkPronunciation() {
+    if (_recognizedText.isEmpty || currentLetterIndex >= letters.length) return;
+
+    final expectedLetter = letters[currentLetterIndex]['letter']!;
+    final result = SpeechRecognitionService.checkPronunciation(
+      expectedText: expectedLetter,
+      recognizedText: _recognizedText,
+      threshold: 0.6,
+    );
+
+    setState(() {
+      _pronunciationResult = result;
+      _showPronunciationFeedback = true;
+    });
+
+    // Auto-hide feedback after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showPronunciationFeedback = false;
+          _recognizedText = '';
+        });
+      }
+    });
+  }
+
+  void _showErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Widget _buildPronunciationFeedback() {
+    if (!_showPronunciationFeedback || _pronunciationResult == null) {
+      return const SizedBox.shrink();
+    }
+
+    final result = _pronunciationResult!;
+    final color = result.isCorrect ? Colors.green : Colors.orange;
+    final icon = result.isCorrect ? Icons.check_circle : Icons.info;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  result.feedback,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (result.recognizedText != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'You said: "${result.recognizedText}"',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: result.accuracy,
+            backgroundColor: Colors.grey.shade300,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Accuracy: ${(result.accuracy * 100).toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Quiz navigation methods
+  void _startQuiz() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Letters Quiz'),
+            backgroundColor: Colors.blue.shade600,
+            foregroundColor: Colors.white,
+          ),
+          body: QuizWidget(
+            category: 'letters',
+            level: 'beginner',
+            onQuizCompleted: _onQuizCompleted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onQuizCompleted(QuizSession session) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => QuizResultsScreen(
+          session: session,
+          onRetakeQuiz: () {
+            Navigator.of(context).pop();
+            _startQuiz();
+          },
+          onBackToMenu: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -263,6 +625,21 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
           tooltip: 'Back',
         ),
         actions: [
+          if (!_speechInitialized)
+            IconButton(
+              onPressed: _checkMicrophonePermission,
+              icon: const Icon(Icons.settings, color: Colors.orange),
+              tooltip: 'Check microphone permissions',
+            ),
+          if (_speechInitialized)
+            IconButton(
+              onPressed: _isListening ? _stopListening : _startListening,
+              icon: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                color: _isListening ? Colors.red : Colors.white,
+              ),
+              tooltip: _isListening ? 'Stop listening' : 'Start pronunciation practice',
+            ),
           IconButton(
             onPressed: () {
               Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
@@ -391,6 +768,47 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+
+            // Speech recognition feedback
+            if (_isListening)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.mic,
+                      color: Colors.red,
+                      size: 30,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Listening... Say the letter',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red,
+                      ),
+                    ),
+                    if (_recognizedText.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Heard: $_recognizedText',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+            // Pronunciation feedback
+            _buildPronunciationFeedback(),
+            
             const SizedBox(height: 30),
 
             // Letter Comparison
@@ -533,6 +951,26 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
                         children: [
                           Icon(Icons.volume_up, size: 20),
                           Text('Speak', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Quiz button
+                  SizedBox(
+                    width: 80,
+                    child: ElevatedButton(
+                      onPressed: _startQuiz,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.quiz, size: 20),
+                          Text('Quiz', style: TextStyle(fontSize: 12)),
                         ],
                       ),
                     ),

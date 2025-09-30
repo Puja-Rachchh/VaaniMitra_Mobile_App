@@ -38,6 +38,10 @@ dependencies:
   shared_preferences: ^2.2.2
   google_fonts: ^6.1.0
   flutter_tts: ^4.0.2
+  # Speech Recognition Dependencies
+  speech_to_text: ^7.3.0
+  permission_handler: ^11.3.1
+  string_similarity: ^2.0.0
 
 dev_dependencies:
   flutter_test:

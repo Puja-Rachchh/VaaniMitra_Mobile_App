@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
+import '../widgets/quiz_widget.dart';
+import '../screens/quiz_results_screen.dart';
+import '../models/quiz_models.dart';
 
 class RelationsLearningScreen extends StatefulWidget {
   const RelationsLearningScreen({super.key});
@@ -109,11 +112,7 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
   Future<void> _loadRelationDescription() async {
     if (relations.isNotEmpty && currentRelationIndex < relations.length) {
       final currentRelation = relations[currentRelationIndex];
-      final description = await TranslationService.translateText(
-        'This is your ${currentRelation['englishName']}. Family relationships are very important in our culture.',
-        knownLanguage!,
-        'en'
-      );
+      final description = 'This is your ${currentRelation['englishName']}. Family relationships are very important in our culture.';
       if (mounted) {
         setState(() {
           translatedDescription = description;
@@ -186,6 +185,43 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
       default:
         return GoogleFonts.poppins(fontSize: fontSize, fontWeight: FontWeight.w600);
     }
+  }
+
+  // Quiz navigation methods
+  void _startQuiz() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Relations Quiz'),
+            backgroundColor: const Color(0xFFE91E63),
+            foregroundColor: Colors.white,
+          ),
+          body: QuizWidget(
+            category: 'relations',
+            level: 'beginner',
+            onQuizCompleted: _onQuizCompleted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onQuizCompleted(QuizSession session) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => QuizResultsScreen(
+          session: session,
+          onRetakeQuiz: () {
+            Navigator.of(context).pop();
+            _startQuiz();
+          },
+          onBackToMenu: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -412,24 +448,66 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
             
             // Navigation buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton.icon(
-                  onPressed: currentRelationIndex > 0 ? _previousRelation : null,
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Previous'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE74C3C),
-                    foregroundColor: Colors.white,
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: currentRelationIndex > 0 ? _previousRelation : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE74C3C),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_back, size: 16),
+                        SizedBox(height: 2),
+                        Text('Prev', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: currentRelationIndex < relations.length - 1 ? _nextRelation : null,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE74C3C),
-                    foregroundColor: Colors.white,
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _startQuiz,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.quiz, size: 16),
+                        SizedBox(height: 2),
+                        Text('Quiz', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: currentRelationIndex < relations.length - 1 ? _nextRelation : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE74C3C),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_forward, size: 16),
+                        SizedBox(height: 2),
+                        Text('Next', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
                   ),
                 ),
               ],

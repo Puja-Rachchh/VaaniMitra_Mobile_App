@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
+import '../widgets/quiz_widget.dart';
+import '../screens/quiz_results_screen.dart';
+import '../models/quiz_models.dart';
 
 class FruitsLearningScreen extends StatefulWidget {
   const FruitsLearningScreen({super.key});
@@ -105,11 +108,7 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
   Future<void> _loadFruitDescription() async {
     if (fruits.isNotEmpty && currentFruitIndex < fruits.length) {
       final currentFruit = fruits[currentFruitIndex];
-      final description = await TranslationService.translateText(
-        'This is a ${currentFruit['englishName']}. It is a delicious and nutritious fruit.',
-        knownLanguage!,
-        'en'
-      );
+      final description = 'This is a ${currentFruit['englishName']}. It is a delicious and nutritious fruit.';
       if (mounted) {
         setState(() {
           translatedDescription = description;
@@ -180,6 +179,43 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
       default:
         return GoogleFonts.notoSans(fontSize: fontSize, fontWeight: FontWeight.bold);
     }
+  }
+
+  // Quiz navigation methods
+  void _startQuiz() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Fruits Quiz'),
+            backgroundColor: Colors.orange.shade600,
+            foregroundColor: Colors.white,
+          ),
+          body: QuizWidget(
+            category: 'fruits',
+            level: 'beginner',
+            onQuizCompleted: _onQuizCompleted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onQuizCompleted(QuizSession session) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => QuizResultsScreen(
+          session: session,
+          onRetakeQuiz: () {
+            Navigator.of(context).pop();
+            _startQuiz();
+          },
+          onBackToMenu: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -471,6 +507,26 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
                         children: [
                           Icon(Icons.volume_up, size: 20),
                           Text('Speak', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Quiz button
+                  SizedBox(
+                    width: 80,
+                    child: ElevatedButton(
+                      onPressed: _startQuiz,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.quiz, size: 20),
+                          Text('Quiz', style: TextStyle(fontSize: 12)),
                         ],
                       ),
                     ),

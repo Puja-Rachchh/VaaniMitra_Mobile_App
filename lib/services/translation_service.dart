@@ -162,6 +162,29 @@ class TranslationService {
       'Cousins': {'hi': 'चचेरे भाई', 'ta': 'உறவினர்', 'te': 'కజిన్స్', 'bn': 'কাজিন', 'mr': 'आत्या', 'gu': 'કઝીન', 'kn': 'ಸೋದರ ಮಕ್ಕಳು', 'ml': 'അമ്മായിയമ്മ', 'pa': 'ਚਚੇਰੇ', 'or': 'ମାସ', 'as': 'খুড়া', 'ur': 'کزن', 'ne': 'दाजुभाइ', 'en': 'Cousins'},
       'Husband': {'hi': 'पति', 'ta': 'கணவன்', 'te': 'భర్త', 'bn': 'স্বামী', 'mr': 'नवरा', 'gu': 'પતિ', 'kn': 'ಪತಿ', 'ml': 'ഭർത്താവ്', 'pa': 'ਪਤੀ', 'or': 'ସ୍ୱାମୀ', 'as': 'স্বামী', 'ur': 'شوہر', 'ne': 'श्रीमान', 'en': 'Husband'},
       'Wife': {'hi': 'पत्नी', 'ta': 'மனைவி', 'te': 'భార్య', 'bn': 'স্ত্রী', 'mr': 'बायको', 'gu': 'પત્ની', 'kn': 'ಪತ್ನಿ', 'ml': 'ഭാര്യ', 'pa': 'ਪਤਨੀ', 'or': 'ପତ୍ନୀ', 'as': 'পত্নী', 'ur': 'بیوی', 'ne': 'श्रीमति', 'en': 'Wife'},
+      
+      // Quiz-specific phrases
+      'Which letter comes after': {'hi': 'कौन सा अक्षर इसके बाद आता है', 'ta': 'எந்த எழுத்து பிறகு வரும்', 'te': 'ఏ అక్షరం తర్వాత వస్తుంది', 'bn': 'কোন অক্ষর পরে আসে', 'mr': 'कोणते अक्षर नंतर येते', 'gu': 'કયો અક્ષર પછી આવે છે', 'kn': 'ಯಾವ ಅಕ್ಷರ ಬಂದ ನಂತರ ಬರುತ್ತದೆ', 'ml': 'ഏത് അക്ഷരം പിന്നാലെ വരും', 'pa': 'ਕਿਹੜਾ ਅੱਖਰ ਬਾਅਦ ਆਉਂਦਾ ਹੈ', 'or': 'କେଉଁ ଅକ୍ଷର ପରେ ଆସେ', 'as': 'কোন আখৰ পাছত আহে', 'ur': 'کون سا حرف بعد میں آتا ہے', 'ne': 'कुन अक्षर पछि आउँछ', 'en': 'Which letter comes after'},
+      'Which letter comes before': {'hi': 'कौन सा अक्षर इससे पहले आता है', 'ta': 'எந்த எழுத்து முன்பு வரும்', 'te': 'ఏ అక্షరం ముందు వస్తుంది', 'bn': 'কোন অক্ষর আগে আসে', 'mr': 'कोणते अक्षर आधी येते', 'gu': 'કયો અક્ષર પહેલાં આવે છે', 'kn': 'ಯಾವ ಅಕ್ಷರ ಮೊದಲು ಬರುತ್ತದೆ', 'ml': 'ഏത് അക്ഷരം മുമ്പ് വരും', 'pa': 'ਕਿਹੜਾ ਅੱਖਰ ਪਹਿਲਾਂ ਆਉਂਦਾ ਹੈ', 'or': 'କେଉଁ ଅକ୍ଷର ଆଗରୁ ଆସେ', 'as': 'কোন আখৰ আগত আহে', 'ur': 'کون سا حرف پہلے آتا ہے', 'ne': 'कुन अक्षर अगाडि आउँछ', 'en': 'Which letter comes before'},
+      'What letter is the': {'hi': 'कौन सा अक्षर है', 'ta': 'எந்த எழுத்து', 'te': 'ఏ అక్షరం', 'bn': 'কোন অক্ষর', 'mr': 'कोणते अक्षर आहे', 'gu': 'કયો અક્ષર છે', 'kn': 'ಯಾವ ಅಕ್ಷರ', 'ml': 'ഏത് അക്ഷരം', 'pa': 'ਕਿਹੜਾ ਅੱਖਰ ਹੈ', 'or': 'କେଉଁ ଅକ୍ଷର', 'as': 'কোন আখৰ', 'ur': 'کون سا حرف ہے', 'ne': 'कुन अक्षर हो', 'en': 'What letter is the'},
+      'letter of the alphabet': {'hi': 'वर्णमाला का अक्षर', 'ta': 'எழுத்து மாலையின் எழுத்து', 'te': 'అక్షరమాల యొక్క అక్షరం', 'bn': 'বর্ণমালার অক্ষর', 'mr': 'वर्णमालेचे अक्षर', 'gu': 'વર્ણમાળાનો અક્ષર', 'kn': 'ಅಕ್ಷರಮಾಲೆಯ ಅಕ್ಷರ', 'ml': 'അക്ഷരമാലയുടെ അക്ഷരം', 'pa': 'ਵਰਣਮਾਲਾ ਦਾ ਅੱਖਰ', 'or': 'ବର୍ଣମାଳାର ଅକ୍ଷର', 'as': 'বৰ্ণমালাৰ আখৰ', 'ur': 'حروف تہجی کا حرف', 'ne': 'वर्णमालाको अक्षर', 'en': 'letter of the alphabet'},
+      'first': {'hi': 'पहला', 'ta': 'முதல்', 'te': 'మొదటి', 'bn': 'প্রথম', 'mr': 'पहिला', 'gu': 'પ્રથમ', 'kn': 'ಮೊದಲ', 'ml': 'ആദ്യത്തെ', 'pa': 'ਪਹਿਲਾ', 'or': 'ପ୍ରଥମ', 'as': 'প্ৰথম', 'ur': 'پہلا', 'ne': 'पहिलो', 'en': 'first'},
+      'second': {'hi': 'दूसरा', 'ta': 'இரண்டாம்', 'te': 'రెండవ', 'bn': 'দ্বিতীয়', 'mr': 'दुसरा', 'gu': 'બીજો', 'kn': 'ಎರಡನೇ', 'ml': 'രണ്ടാമത്തെ', 'pa': 'ਦੂਜਾ', 'or': 'ଦ୍ୱିତୀୟ', 'as': 'দ্বিতীয়', 'ur': 'دوسرا', 'ne': 'दोस्रो', 'en': 'second'},
+      'third': {'hi': 'तीसरा', 'ta': 'மூன்றாம்', 'te': 'మూడవ', 'bn': 'তৃতীয়', 'mr': 'तिसरा', 'gu': 'ત્રીજો', 'kn': 'ಮೂರನೇ', 'ml': 'മൂന്നാമത്തെ', 'pa': 'ਤੀਜਾ', 'or': 'ତୃତୀୟ', 'as': 'তৃতীয়', 'ur': 'تیسرا', 'ne': 'तेस्रो', 'en': 'third'},
+      'fourth': {'hi': 'चौथा', 'ta': 'நான்காம்', 'te': 'నాలుగవ', 'bn': 'চতুর্থ', 'mr': 'चौथा', 'gu': 'ચોથો', 'kn': 'ನಾಲ್ಕನೇ', 'ml': 'നാലാമത്തെ', 'pa': 'ਚੌਥਾ', 'or': 'ଚତୁର୍ଥ', 'as': 'চতুৰ্থ', 'ur': 'چوتھا', 'ne': 'चौथो', 'en': 'fourth'},
+      'fifth': {'hi': 'पांचवा', 'ta': 'ஐந்தாம்', 'te': 'ఐదవ', 'bn': 'পঞ্চম', 'mr': 'पाचवा', 'gu': 'પાંચમો', 'kn': 'ಐದನೇ', 'ml': 'അഞ്ചാമത്തെ', 'pa': 'ਪੰਜਵਾਂ', 'or': 'ପଞ୍ଚମ', 'as': 'পঞ্চম', 'ur': 'پانچواں', 'ne': 'पाँचौं', 'en': 'fifth'},
+      'What is this': {'hi': 'यह क्या है', 'ta': 'இது என்ன', 'te': 'ఇది ఏమిటి', 'bn': 'এটা কি', 'mr': 'हे काय आहे', 'gu': 'આ શું છે', 'kn': 'ಇದು ಏನು', 'ml': 'ഇത് എന്താണ്', 'pa': 'ਇਹ ਕੀ ਹੈ', 'or': 'ଏହା କଣ', 'as': 'এইটো কি', 'ur': 'یہ کیا ہے', 'ne': 'यो के हो', 'en': 'What is this'},
+      'Which of these is': {'hi': 'इनमें से कौन सा है', 'ta': 'இவற்றில் எது', 'te': 'వీటిలో ఏది', 'bn': 'এর মধ্যে কোনটি', 'mr': 'यातील कोणते आहे', 'gu': 'આમાંથી કયું છે', 'kn': 'ಇವುಗಳಲ್ಲಿ ಯಾವುದು', 'ml': 'ഇവയിൽ ഏതാണ്', 'pa': 'ਇਨ੍ਹਾਂ ਵਿੱਚੋਂ ਕਿਹੜਾ ਹੈ', 'or': 'ଏଗୁଡ଼ିକ ମଧ୍ୟରୁ କେଉଁଟି', 'as': 'এইবোৰৰ ভিতৰত কোনটো', 'ur': 'ان میں سے کون سا ہے', 'ne': 'यी मध्ये कुन हो', 'en': 'Which of these is'},
+      'What color is': {'hi': 'क्या रंग है', 'ta': 'என்ன நிறம்', 'te': 'ఏ రంగు', 'bn': 'কি রং', 'mr': 'कोणता रंग आहे', 'gu': 'કયો રંગ છે', 'kn': 'ಯಾವ ಬಣ್ಣ', 'ml': 'എന്ത് നിറമാണ്', 'pa': 'ਕੀ ਰੰਗ ਹੈ', 'or': 'କଣ ରଙ୍ଗ', 'as': 'কি ৰং', 'ur': 'کیا رنگ ہے', 'ne': 'के रङ हो', 'en': 'What color is'},
+      'How many': {'hi': 'कितने', 'ta': 'எத்தனை', 'te': 'ఎన్ని', 'bn': 'কতগুলি', 'mr': 'किती', 'gu': 'કેટલા', 'kn': 'ಎಷ್ಟು', 'ml': 'എത്ര', 'pa': 'ਕਿੰਨੇ', 'or': 'କେତେ', 'as': 'কিমান', 'ur': 'کتنے', 'ne': 'कति', 'en': 'How many'},
+      'Where do you find': {'hi': 'आप कहाँ पाते हैं', 'ta': 'எங்கே காண்கிறீர்கள்', 'te': 'మీరు ఎక్కడ కనుగొంటారు', 'bn': 'আপনি কোথায় পান', 'mr': 'तुम्हाला कुठे सापडते', 'gu': 'તમે ક્યાં મળે છે', 'kn': 'ನೀವು ಎಲ್ಲಿ ಕಾಣುತ್ತೀರಿ', 'ml': 'നിങ്ങൾ എവിടെ കാണുന്നു', 'pa': 'ਤੁਸੀਂ ਕਿੱਥੇ ਪਾਉਂਦੇ ਹੋ', 'or': 'ତୁମେ କେଉଁଠାରେ ପାଇବ', 'as': 'আপুনি ক\'ত পায়', 'ur': 'آپ کہاں پاتے ہیں', 'ne': 'तपाईं कहाँ पाउनुहुन्छ', 'en': 'Where do you find'},
+      'Who helps with': {'hi': 'कौन मदद करता है', 'ta': 'யார் உதவுகிறார்கள்', 'te': 'ఎవరు సహాయం చేస్తారు', 'bn': 'কে সাহায্য করে', 'mr': 'कोण मदत करतो', 'gu': 'કોણ મદદ કરે છે', 'kn': 'ಯಾರು ಸಹಾಯ ಮಾಡುತ್ತಾರೆ', 'ml': 'ആർ സഹായിക്കുന്നു', 'pa': 'ਕੌਣ ਮਦਦ ਕਰਦਾ ਹੈ', 'or': 'କିଏ ସାହାଯ୍ୟ କରେ', 'as': 'কোনে সহায় কৰে', 'ur': 'کون مدد کرتا ہے', 'ne': 'को सहायता गर्छ', 'en': 'Who helps with'},
+      'in the': {'hi': 'में', 'ta': 'இல்', 'te': 'లో', 'bn': 'এ', 'mr': 'मध्ये', 'gu': 'માં', 'kn': 'ನಲ್ಲಿ', 'ml': 'ൽ', 'pa': 'ਵਿੱਚ', 'or': 'ରେ', 'as': 'ত', 'ur': 'میں', 'ne': 'मा', 'en': 'in the'},
+      'and': {'hi': 'और', 'ta': 'மற்றும்', 'te': 'మరియు', 'bn': 'এবং', 'mr': 'आणि', 'gu': 'અને', 'kn': 'ಮತ್ತು', 'ml': 'ഒപ്പം', 'pa': 'ਅਤੇ', 'or': 'ଏବଂ', 'as': 'আৰু', 'ur': 'اور', 'ne': 'र', 'en': 'and'},
+      'of': {'hi': 'का', 'ta': 'இன்', 'te': 'యొక్క', 'bn': 'এর', 'mr': 'चा', 'gu': 'ના', 'kn': 'ದ', 'ml': 'ന്റെ', 'pa': 'ਦਾ', 'or': 'ର', 'as': 'ৰ', 'ur': 'کا', 'ne': 'को', 'en': 'of'},
+      'the': {'hi': '', 'ta': '', 'te': '', 'bn': '', 'mr': '', 'gu': '', 'kn': '', 'ml': '', 'pa': '', 'or': '', 'as': '', 'ur': '', 'ne': '', 'en': 'the'},
+      'to': {'hi': 'को', 'ta': 'க்கு', 'te': 'కు', 'bn': 'কে', 'mr': 'ला', 'gu': 'ને', 'kn': 'ಗೆ', 'ml': 'ക്ക്', 'pa': 'ਨੂੰ', 'or': 'କୁ', 'as': 'লৈ', 'ur': 'کو', 'ne': 'लाई', 'en': 'to'},
+      'is': {'hi': 'है', 'ta': 'உள்ளது', 'te': 'ఉంది', 'bn': 'আছে', 'mr': 'आहे', 'gu': 'છે', 'kn': 'ಇದೆ', 'ml': 'ആണ്', 'pa': 'ਹੈ', 'or': 'ଅଛି', 'as': 'আছে', 'ur': 'ہے', 'ne': 'छ', 'en': 'is'},
     };
 
     // For individual letters, create meaningful phonetic equivalents
@@ -178,7 +201,7 @@ class TranslationService {
       'C': {'hi': 'स', 'ta': 'ச', 'te': 'చ', 'bn': 'চ', 'mr': 'स', 'gu': 'સ', 'kn': 'ಸ', 'ml': 'സ', 'pa': 'ਸ', 'or': 'ସ', 'as': 'চ', 'ur': 'س', 'ne': 'स', 'en': 'C'},
     };
 
-    // Check if it's a fruit or vegetable translation
+    // First, check for exact matches in the combined mapping
     if (fruitVegetableMapping.containsKey(text)) {
       return fruitVegetableMapping[text]![targetLanguage] ?? text;
     }
@@ -186,6 +209,12 @@ class TranslationService {
     // Check if it's a single letter translation
     if (letterPhoneticMapping.containsKey(text)) {
       return letterPhoneticMapping[text]![targetLanguage] ?? text;
+    }
+
+    // For complex sentences, try word-by-word translation
+    String translatedText = _translatePhrase(text, targetLanguage, fruitVegetableMapping);
+    if (translatedText != text) {
+      return translatedText;
     }
 
     // For letter explanations, provide a generic fallback
@@ -196,6 +225,51 @@ class TranslationService {
 
     // Return original text if no translation found
     return text;
+  }
+
+  static String _translatePhrase(String text, String targetLanguage, Map<String, Map<String, String>> translations) {
+    // Handle common quiz question patterns
+    String originalText = text;
+    String result = text;
+    
+    // Check for phrase patterns and translate them
+    for (String phrase in translations.keys) {
+      if (text.contains(phrase)) {
+        String? translation = translations[phrase]?[targetLanguage];
+        if (translation != null) {
+          result = result.replaceAll(phrase, translation);
+        }
+      }
+    }
+    
+    // If no phrase matches, try word-by-word translation
+    if (result == originalText) {
+      List<String> words = text.split(' ');
+      List<String> translatedWords = [];
+      
+      for (String word in words) {
+        // Remove punctuation for matching
+        String cleanWord = word.replaceAll(RegExp(r'[^\w]'), '');
+        
+        // Check if this word exists in our translation mapping
+        String translatedWord = word;
+        for (String key in translations.keys) {
+          if (key.toLowerCase() == cleanWord.toLowerCase()) {
+            String? translation = translations[key]?[targetLanguage];
+            if (translation != null) {
+              // Preserve punctuation from original word
+              translatedWord = word.replaceAll(cleanWord, translation);
+              break;
+            }
+          }
+        }
+        translatedWords.add(translatedWord);
+      }
+      
+      result = translatedWords.join(' ');
+    }
+    
+    return result;
   }
 
   static Map<String, String> getSupportedLanguages() {
