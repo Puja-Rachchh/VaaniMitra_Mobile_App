@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
+import '../widgets/quiz_widget.dart';
+import '../screens/quiz_results_screen.dart';
+import '../models/quiz_models.dart';
 
 class ProfessionalsLearningScreen extends StatefulWidget {
   const ProfessionalsLearningScreen({super.key});
@@ -103,11 +106,7 @@ class _ProfessionalsLearningScreenState extends State<ProfessionalsLearningScree
   Future<void> _loadProfessionalDescription() async {
     if (professionals.isNotEmpty && currentProfessionalIndex < professionals.length) {
       final currentProfessional = professionals[currentProfessionalIndex];
-      final description = await TranslationService.translateText(
-        'This is a ${currentProfessional['englishName']}. They work in different fields to serve the community.',
-        knownLanguage!,
-        'en'
-      );
+      final description = 'This is a ${currentProfessional['englishName']}. They work in different fields to serve the community.';
       if (mounted) {
         setState(() {
           translatedDescription = description;
@@ -180,6 +179,43 @@ class _ProfessionalsLearningScreenState extends State<ProfessionalsLearningScree
       default:
         return GoogleFonts.poppins(fontSize: fontSize, fontWeight: FontWeight.w600);
     }
+  }
+
+  // Quiz navigation methods
+  void _startQuiz() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Professionals Quiz'),
+            backgroundColor: const Color(0xFF3498DB),
+            foregroundColor: Colors.white,
+          ),
+          body: QuizWidget(
+            category: 'professionals',
+            level: 'beginner',
+            onQuizCompleted: _onQuizCompleted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onQuizCompleted(QuizSession session) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => QuizResultsScreen(
+          session: session,
+          onRetakeQuiz: () {
+            Navigator.of(context).pop();
+            _startQuiz();
+          },
+          onBackToMenu: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -406,24 +442,66 @@ class _ProfessionalsLearningScreenState extends State<ProfessionalsLearningScree
             
             // Navigation buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton.icon(
-                  onPressed: currentProfessionalIndex > 0 ? _previousProfessional : null,
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Previous'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3498DB),
-                    foregroundColor: Colors.white,
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: currentProfessionalIndex > 0 ? _previousProfessional : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3498DB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_back, size: 16),
+                        SizedBox(height: 2),
+                        Text('Prev', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: currentProfessionalIndex < professionals.length - 1 ? _nextProfessional : null,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3498DB),
-                    foregroundColor: Colors.white,
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _startQuiz,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.quiz, size: 16),
+                        SizedBox(height: 2),
+                        Text('Quiz', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 70,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: currentProfessionalIndex < professionals.length - 1 ? _nextProfessional : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3498DB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_forward, size: 16),
+                        SizedBox(height: 2),
+                        Text('Next', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
                   ),
                 ),
               ],
