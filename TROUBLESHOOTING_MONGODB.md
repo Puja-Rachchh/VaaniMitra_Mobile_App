@@ -64,7 +64,7 @@ Look for these logs when requesting translation:
 ### Option 1: Populate MongoDB Manually (Recommended)
 
 1. Open MongoDB Compass
-2. Connect using: `mongodb+srv://pujarachchh:FWcrDD77m3tAh9zQ@cluster0.m9pcbed.mongodb.net/`
+2. Connect using: `Mongo_DB_URL`
 3. Navigate to database: `vaanimitra`
 4. Create collection: `translations` (if doesn't exist)
 5. Insert sample document:
@@ -149,8 +149,7 @@ The logs will tell you exactly what's working and what's not.
 If you have MongoDB shell installed:
 
 ```bash
-mongosh "mongodb+srv://pujarachchh:FWcrDD77m3tAh9zQ@cluster0.m9pcbed.mongodb.net/"
-
+mongosh "MONGO_DB_URL"
 use vaanimitra
 
 db.translations.insertMany([
