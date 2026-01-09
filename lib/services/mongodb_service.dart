@@ -9,7 +9,7 @@ class MongoDBService {
 
   // MongoDB connection string
   static const String _connectionString =
-      'mongodb+srv://pujarachchh:FWcrDD77m3tAh9zQ@cluster0.m9pcbed.mongodb.net/';
+      'Enter_Mongo_DB_URL_Here';
   
   static const String _databaseName = 'vaanimitra';
   static const String _translationsCollection = 'translations';
