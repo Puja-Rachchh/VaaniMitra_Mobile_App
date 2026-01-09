@@ -1,4 +1,4 @@
-/// Quiz data models for the VaaniMitra app
+// Quiz data models for the VaaniMitra app
 
 /// Represents a single quiz question
 class QuizQuestion {

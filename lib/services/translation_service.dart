@@ -1,12 +1,53 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import 'mongodb_service.dart';
+import 'package:flutter/foundation.dart';
 
 class TranslationService {
   static const String _baseUrl = 'https://translation.googleapis.com/language/translate/v2';
+  static bool _mongoDBInitialized = false;
+
+  /// Initialize MongoDB connection (call once at app startup)
+  static Future<void> initialize() async {
+    if (!_mongoDBInitialized) {
+      _mongoDBInitialized = await MongoDBService.connect();
+      if (_mongoDBInitialized) {
+        debugPrint('✅ TranslationService: MongoDB initialized');
+      } else {
+        debugPrint('⚠️ TranslationService: MongoDB connection failed, using fallback');
+      }
+    }
+  }
 
   static Future<String> translateText(String text, String targetLanguage, String sourceLanguage) async {
+    debugPrint('📝 Translation request: "$text" ($sourceLanguage → $targetLanguage)');
+    
+    // Ensure MongoDB is initialized
+    if (!_mongoDBInitialized) {
+      debugPrint('⚠️ MongoDB not initialized, initializing now...');
+      await initialize();
+    }
+
+    // Step 1: Try MongoDB first
+    if (_mongoDBInitialized) {
+      final mongoTranslation = await MongoDBService.getTranslation(
+        text: text,
+        fromLanguage: sourceLanguage,
+        toLanguage: targetLanguage,
+      );
+      
+      if (mongoTranslation != null) {
+        debugPrint('✅ Translation from MongoDB: "$text" → "$mongoTranslation"');
+        return mongoTranslation;
+      }
+    }
+
+    // Step 2: Try Google Translate API if MongoDB doesn't have translation
+    debugPrint('🌐 Attempting Google Translate API...');
     try {
+      debugPrint('   API Key available: ${ApiConfig.googleTranslateApiKey.isNotEmpty}');
+      
       final response = await http.post(
         Uri.parse('$_baseUrl?key=${ApiConfig.googleTranslateApiKey}'),
         headers: {
@@ -20,17 +61,36 @@ class TranslationService {
         }),
       );
 
+      debugPrint('   API Response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['data']['translations'][0]['translatedText'];
+        final apiTranslation = data['data']['translations'][0]['translatedText'] as String;
+        debugPrint('✅ Translation from Google API: "$text" → "$apiTranslation"');
+        
+        // Save to MongoDB for future use
+        if (_mongoDBInitialized) {
+          debugPrint('   Saving to MongoDB...');
+          await MongoDBService.saveTranslation(
+            text: text,
+            fromLanguage: sourceLanguage,
+            toLanguage: targetLanguage,
+            translation: apiTranslation,
+          );
+        }
+        
+        return apiTranslation;
       } else {
-        // Fallback to offline translation
-        return _getFallbackTranslation(text, targetLanguage, sourceLanguage);
+        debugPrint('❌ API returned error: ${response.statusCode} - ${response.body}');
       }
-    } catch (e) {
-      // If API fails, use fallback translation
-      return _getFallbackTranslation(text, targetLanguage, sourceLanguage);
+    } catch (e, stackTrace) {
+      debugPrint('❌ Google Translate API error: $e');
+      debugPrint('   Stack trace: $stackTrace');
     }
+
+    // Step 3: Fallback to offline translation
+    debugPrint('ℹ️ Using offline fallback translation for "$text"');
+    return _getFallbackTranslation(text, targetLanguage, sourceLanguage);
   }
 
   static String _getFallbackTranslation(String text, String targetLanguage, String sourceLanguage) {

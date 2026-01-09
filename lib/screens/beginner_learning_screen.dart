@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
 import '../services/speech_recognition_service.dart';
+import '../services/pronunciation_service.dart' as pron_service;
 import '../widgets/quiz_widget.dart';
 import '../screens/quiz_results_screen.dart';
+import '../screens/letter_tracing_screen.dart';
 import '../models/quiz_models.dart';
 
 class BeginnerLearningScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
   bool _speechInitialized = false;
   bool _isListening = false;
   String _recognizedText = '';
-  PronunciationResult? _pronunciationResult;
+  pron_service.PronunciationResult? _pronunciationResult;
   bool _showPronunciationFeedback = false;
 
   @override
@@ -188,6 +189,27 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
       default:
         return GoogleFonts.notoSans(fontSize: fontSize, fontWeight: FontWeight.bold);
     }
+  }
+
+  // Navigation method for letter tracing
+  void _navigateToLetterTracing() {
+    if (targetLanguage == null) {
+      _showErrorMessage('Target language not set');
+      return;
+    }
+
+    final languageNames = TranslationService.getSupportedLanguages();
+    final languageName = languageNames[targetLanguage!] ?? 'Unknown';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LetterTracingScreen(
+          language: targetLanguage!,
+          languageName: languageName,
+        ),
+      ),
+    );
   }
 
   // Speech recognition methods
@@ -401,11 +423,12 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
     if (_recognizedText.isEmpty || currentLetterIndex >= letters.length) return;
 
     final expectedLetter = letters[currentLetterIndex]['letter']!;
-    final result = SpeechRecognitionService.checkPronunciation(
-      expectedText: expectedLetter,
-      recognizedText: _recognizedText,
-      threshold: 0.6,
-    );
+
+    // Option A: transliterate expected and recognized strings to Latin before comparing.
+    final expectedLatin = _transliterateToLatin(expectedLetter, targetLanguage);
+    final recognizedLatin = _transliterateToLatin(_recognizedText, targetLanguage);
+
+  final result = pron_service.PronunciationService.evaluate(expectedLatin, recognizedLatin);
 
     setState(() {
       _pronunciationResult = result;
@@ -421,6 +444,89 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
         });
       }
     });
+  }
+
+  // Basic transliteration helper for letters used in this app.
+  // This maps a small set of common letters (vowels/consonants) to simple
+  // Latin phonetic approximations. It's intentionally small and focused on
+  // the characters present in `languageLetters` defined above. If the
+  // input already contains Latin characters, it is returned normalized.
+  String _transliterateToLatin(String input, String? lang) {
+    final normalized = input.trim();
+    // If input already contains ASCII letters/digits, return lowercased
+    if (RegExp(r'^[\x00-\x7F]+$').hasMatch(normalized) &&
+        RegExp(r'[A-Za-z0-9]').hasMatch(normalized)) {
+      return normalized.toLowerCase();
+    }
+
+    // Per-language small maps
+    final Map<String, Map<String, String>> maps = {
+      'hi': {
+        'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ii', 'उ': 'u', 'ऊ': 'uu', 'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au',
+        'क': 'ka', 'ख': 'kha', 'ग': 'ga', 'घ': 'gha', 'च': 'cha'
+      },
+      'mr': {
+        'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ii', 'उ': 'u', 'ऊ': 'uu', 'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au',
+        'क': 'ka', 'ख': 'kha', 'ग': 'ga', 'घ': 'gha', 'च': 'cha'
+      },
+      'ta': {
+        'அ': 'a', 'ஆ': 'aa', 'இ': 'i', 'ஈ': 'ii', 'உ': 'u', 'ஊ': 'uu', 'எ': 'e', 'ஏ': 'ee', 'ஐ': 'ai', 'ஒ': 'o', 'ஓ': 'oo', 'ஔ': 'au', 'க': 'ka', 'ங': 'nga', 'ச': 'cha'
+      },
+      'bn': {
+        'অ': 'a', 'আ': 'aa', 'ই': 'i', 'ঈ': 'ii', 'উ': 'u', 'ঊ': 'uu', 'এ': 'e', 'ঐ': 'oi', 'ও': 'o', 'ঔ': 'ou', 'ক': 'ka', 'খ': 'kha', 'গ': 'ga', 'ঘ': 'gha', 'চ': 'cha'
+      },
+      'gu': {
+        'અ': 'a', 'આ': 'aa', 'ઇ': 'i', 'ઈ': 'ii', 'ઉ': 'u', 'ઊ': 'uu', 'એ': 'e', 'ઐ': 'ai', 'ઓ': 'o', 'ઔ': 'au', 'ક': 'ka', 'ખ': 'kha', 'ગ': 'ga', 'ઘ': 'gha', 'ચ': 'cha'
+      },
+      'kn': {
+        'ಅ': 'a', 'ಆ': 'aa', 'ಇ': 'i', 'ಈ': 'ii', 'ಉ': 'u', 'ಊ': 'uu', 'ಎ': 'e', 'ಏ': 'ee', 'ಐ': 'ai', 'ಒ': 'o', 'ಓ': 'oo', 'ಔ': 'au', 'ಕ': 'ka', 'ಖ': 'kha', 'ಗ': 'ga'
+      },
+      'ml': {
+        'അ': 'a', 'ആ': 'aa', 'ഇ': 'i', 'ഈ': 'ii', 'ഉ': 'u', 'ഊ': 'uu', 'എ': 'e', 'ഏ': 'ee', 'ഐ': 'ai', 'ഒ': 'o', 'ഓ': 'oo', 'ഔ': 'au', 'ക': 'ka', 'ഖ': 'kha'
+      },
+      'te': {
+        'అ': 'a', 'ఆ': 'aa', 'ఇ': 'i', 'ఈ': 'ii', 'ఉ': 'u', 'ఊ': 'uu', 'ఎ': 'e', 'ఏ': 'ee', 'ఐ': 'ai', 'ఒ': 'o', 'ఓ': 'oo', 'ఔ': 'au', 'క': 'ka', 'ఖ': 'kha'
+      },
+      'pa': {
+        'ਅ': 'a', 'ਆ': 'aa', 'ਇ': 'i', 'ਈ': 'ii', 'ਉ': 'u', 'ਊ': 'uu', 'ਏ': 'e', 'ਐ': 'ai', 'ਓ': 'o', 'ਔ': 'au', 'ਕ': 'ka', 'ਖ': 'kha', 'ਗ': 'ga', 'ਘ': 'gha', 'ਚ': 'cha'
+      },
+      'or': {
+        'ଅ': 'a', 'ଆ': 'aa', 'ଇ': 'i', 'ଈ': 'ii', 'ଉ': 'u', 'ଊ': 'uu', 'ଋ': 'ri', 'ଏ': 'e', 'ଐ': 'ai', 'ଓ': 'o', 'ଔ': 'au', 'କ': 'ka', 'ଖ': 'kha', 'ଗ': 'ga', 'ଘ': 'gha'
+      },
+      'as': {
+        'অ': 'a', 'আ': 'aa', 'ই': 'i', 'ঈ': 'ii', 'উ': 'u', 'ঊ': 'uu', 'এ': 'e', 'ঐ': 'oi', 'ও': 'o', 'ঔ': 'ou', 'ক': 'ka', 'খ': 'kha', 'গ': 'ga', 'ঘ': 'gha'
+      },
+      'ur': {
+        'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ٹ': 't', 'ث': 's', 'ج': 'j', 'چ': 'ch', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ڈ': 'd', 'ذ': 'z', 'ر': 'r', 'ڑ': 'r'
+      },
+      'sd': {
+        'ا': 'a', 'ب': 'b', 'پ': 'p', 'ت': 't', 'ٿ': 'th', 'ث': 's', 'ج': 'j', 'ڄ': 'j', 'ح': 'h', 'خ': 'kh', 'د': 'd', 'ڌ': 'dh', 'ذ': 'z', 'ر': 'r', 'ڙ': 'r'
+      },
+      'ne': {
+        'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ii', 'उ': 'u', 'ऊ': 'uu', 'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au', 'क': 'ka', 'ख': 'kha', 'ग': 'ga', 'घ': 'gha'
+      },
+      // fallback for languages not mapped
+      'default': {}
+    };
+
+    final map = maps[lang] ?? maps['default']!;
+
+    // Try per-character mapping
+    final buffer = StringBuffer();
+    for (var rune in normalized.runes) {
+      final ch = String.fromCharCode(rune);
+      if (map.containsKey(ch)) {
+        buffer.write(map[ch]);
+      } else if (RegExp(r'[A-Za-z0-9]').hasMatch(ch)) {
+        buffer.write(ch);
+      } else {
+        // If unknown, skip or attempt basic decomposition
+        // Keep it simple: skip unknown characters
+      }
+    }
+
+    final out = buffer.toString().toLowerCase();
+    return out.isEmpty ? normalized.toLowerCase() : out;
   }
 
   void _showErrorMessage(String message) {
@@ -471,10 +577,10 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
               ),
             ],
           ),
-          if (result.recognizedText != null) ...[
+          if (result.recognizedNormalized.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              'You said: "${result.recognizedText}"',
+              'You said: "${result.recognizedNormalized}"',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -483,13 +589,13 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
           ],
           const SizedBox(height: 8),
           LinearProgressIndicator(
-            value: result.accuracy,
+            value: result.score,
             backgroundColor: Colors.grey.shade300,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
           const SizedBox(height: 4),
           Text(
-            'Accuracy: ${(result.accuracy * 100).toStringAsFixed(1)}%',
+            'Accuracy: ${(result.score * 100).toStringAsFixed(1)}%',
             style: TextStyle(
               color: color,
               fontSize: 12,
@@ -996,6 +1102,97 @@ class _BeginnerLearningScreenState extends State<BeginnerLearningScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // Divider
+            Divider(
+              thickness: 2,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 20),
+
+            // Practice Writing Section
+            Text(
+              '✏️ Practice Writing',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 15),
+
+            // Practice Writing Card
+            Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: InkWell(
+                onTap: _navigateToLetterTracing,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.purple.shade400,
+                        Colors.deepPurple.shade600,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.draw,
+                          size: 36,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Letter Tracing',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Learn to write ${TranslationService.getSupportedLanguages()[targetLanguage] ?? "letters"} by tracing',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),

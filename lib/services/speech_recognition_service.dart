@@ -1,17 +1,18 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:string_similarity/string_similarity.dart';
 
-/// Result class for pronunciation checking
-class PronunciationResult {
+/// Result class for pronunciation checking used by SpeechRecognitionService
+class SpeechPronunciationResult {
   final String expectedText;
   final String? recognizedText;
   final double accuracy;
   final bool isCorrect;
   final String feedback;
 
-  PronunciationResult({
+  SpeechPronunciationResult({
     required this.expectedText,
     this.recognizedText,
     required this.accuracy,
@@ -24,7 +25,8 @@ class PronunciationResult {
 class SpeechRecognitionService {
   static final SpeechToText _speechToText = SpeechToText();
   static bool _isInitialized = false;
-  static bool _hasPermission = false;
+  // Note: permission state is checked on demand; removed unused field to
+  // satisfy analyzer.
 
   /// Language mapping for Indian languages
   static const Map<String, String> _languageLocales = {
@@ -70,85 +72,85 @@ class SpeechRecognitionService {
       
       // Reset initialization status
       _isInitialized = false;
-      _hasPermission = false;
       
       // Request microphone permission FIRST
       debugPrint('🎤 Requesting microphone permission...');
-      final permissionStatus = await Permission.microphone.request();
-      debugPrint('🎤 Permission status: $permissionStatus');
+      var permissionStatus = await Permission.microphone.status;
+      debugPrint('🎤 Initial permission status: $permissionStatus');
+      
+      if (!permissionStatus.isGranted) {
+        debugPrint('🎤 Permission not granted, requesting...');
+        permissionStatus = await Permission.microphone.request();
+        debugPrint('🎤 Permission after request: $permissionStatus');
+      }
       
       if (!permissionStatus.isGranted) {
         debugPrint('❌ Microphone permission denied. Status: $permissionStatus');
         
-        // Check if permission is permanently denied
         if (permissionStatus.isPermanentlyDenied) {
-          debugPrint('❌ Permission permanently denied. Please enable in settings.');
+          debugPrint('❌ Permission permanently denied. User must enable in settings.');
+          debugPrint('💡 Go to: Settings > Apps > VaaniMitra > Permissions > Microphone');
+        } else if (permissionStatus.isDenied) {
+          debugPrint('❌ Permission denied this time. User can try again.');
         }
         return false;
       }
 
-      _hasPermission = true;
       debugPrint('✅ Microphone permission granted');
 
-      // Wait a bit for permission to be processed
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Wait for permission to be processed
+      await Future.delayed(const Duration(milliseconds: 1000));
 
-      // Try simple initialization first
-      debugPrint('🎤 Attempting simple initialization...');
+      // Try initialization
+      debugPrint('🎤 Attempting speech recognition initialization...');
       try {
-        _isInitialized = await _speechToText.initialize();
-        debugPrint('🎤 Simple initialization result: $_isInitialized');
+        _isInitialized = await _speechToText.initialize(
+          onError: (error) => debugPrint('❌ Speech error: ${error.errorMsg}'),
+          onStatus: (status) => debugPrint('🎤 Status: $status'),
+        );
+        debugPrint('🎤 Initialization result: $_isInitialized');
       } catch (e) {
-        debugPrint('⚠️ Simple initialization failed: $e');
+        debugPrint('⚠️ Initialization failed: $e');
         _isInitialized = false;
       }
 
-      // If simple initialization failed, try with callbacks
-      if (!_isInitialized) {
-        debugPrint('🎤 Trying initialization with callbacks...');
-        try {
-          _isInitialized = await _speechToText.initialize(
-            onError: (error) {
-              debugPrint('❌ Speech recognition error: ${error.errorMsg}');
-            },
-            onStatus: (status) => debugPrint('🎤 Speech recognition status: $status'),
-          );
-          debugPrint('🎤 Callback initialization result: $_isInitialized');
-        } catch (e) {
-          debugPrint('⚠️ Callback initialization failed: $e');
-          _isInitialized = false;
-        }
-      }
-
-      // Check if speech recognition is available after initialization
       if (_isInitialized) {
         final isAvailable = _speechToText.isAvailable;
         debugPrint('🎤 Speech recognition available: $isAvailable');
         
         if (!isAvailable) {
-          debugPrint('❌ Speech recognition initialized but not available - device may not support it');
+          debugPrint('❌ Speech service initialized but not available');
+          debugPrint('💡 Possible causes:');
+          debugPrint('   - Device does not support speech recognition');
+          debugPrint('   - Google services not installed');
+          debugPrint('   - Internet connection required');
           _isInitialized = false;
           return false;
         }
 
-        // Log available locales for debugging
+        // Log available locales
         try {
           final locales = await _speechToText.locales();
-          debugPrint('🌍 Available locales (${locales.length}): ${locales.take(5).map((l) => '${l.localeId}: ${l.name}').join(', ')}${locales.length > 5 ? '...' : ''}');
+          debugPrint('🌍 Available locales (${locales.length}): ${locales.take(3).map((l) => l.localeId).join(', ')}...');
         } catch (e) {
           debugPrint('⚠️ Error getting locales: $e');
         }
         
         debugPrint('✅ Speech recognition fully initialized and ready!');
       } else {
-        debugPrint('❌ Speech recognition initialization failed completely');
+        debugPrint('❌ Speech recognition initialization failed');
+        debugPrint('💡 Troubleshooting steps:');
+        debugPrint('   1. Check if Google app is installed and updated');
+        debugPrint('   2. Ensure internet connection is active');
+        debugPrint('   3. Try restarting the app');
+        debugPrint('   4. Check device supports speech recognition');
       }
       
       return _isInitialized;
     } catch (e) {
       debugPrint('💥 Error initializing speech recognition: $e');
+      debugPrint('💥 Error type: ${e.runtimeType}');
       _isInitialized = false;
-      _hasPermission = false;
       return false;
     }
   }
@@ -297,6 +299,7 @@ class SpeechRecognitionService {
     required String languageCode,
     required Function(String) onResult,
     Function(bool)? onListening,
+    Function(String)? onError,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     debugPrint('🎯 === STARTING SPEECH RECOGNITION ===');
@@ -335,6 +338,17 @@ class SpeechRecognitionService {
     }
 
     try {
+      // Ensure microphone permission is granted before starting
+      final perm = await Permission.microphone.status;
+      if (!perm.isGranted) {
+        debugPrint('🎤 startListening: Microphone permission not granted, requesting...');
+        final res = await Permission.microphone.request();
+        if (!res.isGranted) {
+          debugPrint('❌ startListening: Microphone permission denied by user');
+          return false;
+        }
+        debugPrint('✅ startListening: Microphone permission granted after request');
+      }
       // Step 4: Get locale
       debugPrint('🔍 Step 4: Getting locale...');
       final locale = _getLocaleForLanguage(languageCode);
@@ -346,46 +360,90 @@ class SpeechRecognitionService {
       debugPrint('🌍 Available locales count: ${availableLocales.length}');
       
       // Print all available locales for debugging
-      for (var locale in availableLocales) {
-        debugPrint('🌍 Available: ${locale.localeId} (${locale.name})');
+      for (var loc in availableLocales) {
+        debugPrint('🌍 Available: ${loc.localeId} (${loc.name})');
       }
       
-      var isLocaleSupported = availableLocales.any((l) => l.localeId == locale);
-      debugPrint('🌍 Is locale $locale supported: $isLocaleSupported');
+      // Find the actual locale format used by the device
+      // Device may use "hi_IN" (underscore) while we use "hi-IN" (hyphen)
+      final matchingLocale = availableLocales.where((l) => 
+        l.localeId == locale || 
+        l.localeId.replaceAll('_', '-') == locale ||
+        l.localeId == locale.replaceAll('-', '_')
+      ).firstOrNull;
       
-      String finalLocale = locale;
+      bool isLocaleSupported = matchingLocale != null;
+      String actualLocale = matchingLocale?.localeId ?? locale;
+      
+      if (matchingLocale != null && matchingLocale.localeId != locale) {
+        debugPrint('🔄 Found locale with different format: ${matchingLocale.localeId} (requested: $locale)');
+      }
+      
+      debugPrint('🌍 Is locale $locale supported: $isLocaleSupported (using: $actualLocale)');
+      
+      String finalLocale = actualLocale;
+      String? unsupportedMessage;
       
       if (!isLocaleSupported) {
         debugPrint('⚠️ Locale $locale not supported');
+        unsupportedMessage = 'Your device does not support $languageCode speech recognition.';
         
-        // Priority fallback order for Indian languages
-        final fallbackOrder = ['hi-IN', 'en-IN', 'en-US', 'en-AU', 'en-GB'];
+        // Check if Hindi is available as a fallback for Indian languages
+        final hindiLocale = availableLocales.where((l) => 
+          l.localeId == 'hi-IN' || l.localeId == 'hi_IN'
+        ).firstOrNull;
         
-        String? foundFallback;
-        for (final fallback in fallbackOrder) {
-          if (availableLocales.any((l) => l.localeId == fallback)) {
-            foundFallback = fallback;
-            break;
-          }
-        }
-        
-        if (foundFallback != null) {
-          finalLocale = foundFallback;
-          debugPrint('🔄 Using priority fallback: $finalLocale');
+        if (hindiLocale != null && languageCode != 'hi' && languageCode != 'en') {
+          unsupportedMessage += ' Using Hindi instead.';
+          finalLocale = hindiLocale.localeId;
+          debugPrint('🔄 Using Hindi (${hindiLocale.localeId}) as fallback for $languageCode');
         } else {
-          // Try to find any English variant
-          final englishLocales = availableLocales.where((l) => l.localeId.startsWith('en')).toList();
-          if (englishLocales.isNotEmpty) {
-            finalLocale = englishLocales.first.localeId;
-            debugPrint('🔄 Using English variant: $finalLocale');
+          // Priority fallback order
+          final fallbackOrder = ['hi-IN', 'hi_IN', 'en-IN', 'en_IN', 'en-US', 'en_US', 'en-AU', 'en_AU', 'en-GB', 'en_GB'];
+        
+          String? foundFallback;
+          for (final fallback in fallbackOrder) {
+            final matchingLocale = availableLocales.where((l) => 
+              l.localeId == fallback || 
+              l.localeId.replaceAll('_', '-') == fallback ||
+              l.localeId == fallback.replaceAll('-', '_')
+            ).firstOrNull;
+            
+            if (matchingLocale != null) {
+              foundFallback = matchingLocale.localeId;
+              break;
+            }
+          }
+          
+          if (foundFallback != null) {
+            finalLocale = foundFallback;
+            unsupportedMessage += ' Using ${_getLanguageName(foundFallback)} instead.';
+            debugPrint('🔄 Using priority fallback: $finalLocale');
           } else {
-            // Use the first available locale as last resort
-            if (availableLocales.isNotEmpty) {
-              finalLocale = availableLocales.first.localeId;
-              debugPrint('🔄 Using first available locale: $finalLocale');
+            // Try to find any English variant
+            final englishLocales = availableLocales.where((l) => l.localeId.startsWith('en')).toList();
+            if (englishLocales.isNotEmpty) {
+              finalLocale = englishLocales.first.localeId;
+              unsupportedMessage += ' Using English instead.';
+              debugPrint('🔄 Using English variant: $finalLocale');
+            } else {
+              // Use the first available locale as last resort
+              if (availableLocales.isNotEmpty) {
+                finalLocale = availableLocales.first.localeId;
+                unsupportedMessage += ' Using available language instead.';
+                debugPrint('🔄 Using first available locale: $finalLocale');
+              } else {
+                onError?.call('No speech recognition languages available on this device.');
+                return false;
+              }
             }
           }
         }
+      }
+      
+      // Notify user if locale was changed
+      if (unsupportedMessage != null && onError != null) {
+        onError(unsupportedMessage);
       }
       debugPrint('🎯 Using final locale: $finalLocale');
       
@@ -393,80 +451,93 @@ class SpeechRecognitionService {
       debugPrint('🔍 Step 6: Starting to listen with locale: $finalLocale');
       
       bool actualSuccess = false;
+      int maxRetries = 1;  // Reduced retries since we have better error handling
       
-      try {
-        // Try with full parameters first
-        debugPrint('🎤 Attempting full parameter listen...');
-        final success = await _speechToText.listen(
-          onResult: (result) {
-            final recognizedWords = result.recognizedWords;
-            final confidence = result.confidence;
-            debugPrint('🎤 Speech result: "$recognizedWords" (confidence: $confidence, final: ${result.finalResult})');
-            onResult(recognizedWords);
-            
-            if (result.finalResult) {
-              debugPrint('✅ Final speech result: "$recognizedWords"');
-            }
-          },
-          listenFor: timeout,
-          pauseFor: const Duration(seconds: 3),
-          partialResults: true,
-          localeId: finalLocale,
-          onSoundLevelChange: (level) {
-            debugPrint('🔊 Sound level: $level');
+      for (int attempt = 1; attempt <= maxRetries && !actualSuccess; attempt++) {
+        try {
+          if (attempt > 1) {
+            debugPrint('🔁 Retry attempt $attempt/$maxRetries...');
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+          
+          // Try with full parameters first
+          debugPrint('🎤 Attempting full parameter listen...');
+          // The speech_to_text package has deprecated some named params in
+          // older versions; keep the current call but ignore deprecation
+          // analyzer hints here until the package can be upgraded and the
+          // newer SpeechListenOptions-based API used.
+          bool _lastNotifiedListeningState = true;  // Track last notified state to prevent flickering
+          
+          // Listen for status changes
+          _speechToText.statusListener = (status) {
+            debugPrint('🎤 Status: $status');
             if (onListening != null) {
-              onListening(level > 0);
+              // Only update on meaningful status changes
+              if (status == 'done' || status == 'notListening') {
+                if (_lastNotifiedListeningState) {
+                  _lastNotifiedListeningState = false;
+                  onListening(false);
+                }
+              } else if (status == 'listening') {
+                if (!_lastNotifiedListeningState) {
+                  _lastNotifiedListeningState = true;
+                  onListening(true);
+                }
+              }
             }
-          },
-          cancelOnError: true,
-          listenMode: ListenMode.confirmation,
-        );
-        
-        actualSuccess = success ?? false;
-        debugPrint('🎤 Full parameter result: $success (treated as: $actualSuccess)');
-        
-      } catch (e) {
-        debugPrint('⚠️ Full parameter listen failed: $e');
-        actualSuccess = false;
-      }
-      
-      // If full parameter method failed, try simplified approach
-      if (!actualSuccess) {
-        try {
-          debugPrint('🎤 Attempting simplified listen...');
-          final simpleSuccess = await _speechToText.listen(
+          };
+          
+          final success = await _speechToText.listen(
             onResult: (result) {
-              debugPrint('🎤 Simple result: "${result.recognizedWords}"');
-              onResult(result.recognizedWords);
+              final recognizedWords = result.recognizedWords;
+              final confidence = result.confidence;
+              debugPrint('🎤 Speech result: "$recognizedWords" (confidence: $confidence, final: ${result.finalResult})');
+              onResult(recognizedWords);
+
+              if (result.finalResult) {
+                debugPrint('✅ Final speech result: "$recognizedWords"');
+                // Notify that listening stopped when final result is received
+                if (onListening != null && _lastNotifiedListeningState) {
+                  _lastNotifiedListeningState = false;
+                  onListening(false);
+                }
+              }
             },
+            listenFor: timeout,
+            pauseFor: const Duration(seconds: 3),
+            partialResults: true,
             localeId: finalLocale,
-          );
-          
-          actualSuccess = simpleSuccess ?? false;
-          debugPrint('� Simplified result: $simpleSuccess (treated as: $actualSuccess)');
-          
-        } catch (e) {
-          debugPrint('⚠️ Simplified listen failed: $e');
-        }
-      }
-      
-      // If still failed, try with default locale
-      if (!actualSuccess && finalLocale != 'en-US') {
-        try {
-          debugPrint('🎤 Attempting with en-US...');
-          final enSuccess = await _speechToText.listen(
-            onResult: (result) {
-              debugPrint('🎤 EN result: "${result.recognizedWords}"');
-              onResult(result.recognizedWords);
+            onSoundLevelChange: (level) {
+              // Don't use sound level for listening state - causes flickering
             },
-            localeId: 'en-US',
+            cancelOnError: false,  // Don't cancel on error_no_match
+            listenMode: ListenMode.confirmation,
           );
           
-          actualSuccess = enSuccess ?? false;
-          debugPrint('🎤 EN-US result: $enSuccess (treated as: $actualSuccess)');
+          actualSuccess = success ?? false;
+          debugPrint('🎤 Listen call result: $success (treated as: $actualSuccess)');
           
+          // Verify listening actually started - trust the isListening state more than return value
+          await Future.delayed(const Duration(milliseconds: 300));
+          final isActuallyListening = _speechToText.isListening;
+          debugPrint('🎤 Verification check - isListening: $isActuallyListening');
+          
+          // IMPORTANT: If speech recognition is actually listening, consider it successful
+          // even if listen() returned null/false (known issue with speech_to_text package)
+          if (isActuallyListening) {
+            debugPrint('✅ Speech recognition is actively listening - success!');
+            actualSuccess = true;
+          } else if (actualSuccess) {
+            debugPrint('⚠️ Listen returned true but not actually listening!');
+            actualSuccess = false;
+          }
         } catch (e) {
-          debugPrint('⚠️ EN-US listen failed: $e');
+          debugPrint('⚠️ Listen attempt $attempt failed: $e');
+          actualSuccess = false;
+          
+          if (attempt < maxRetries) {
+            debugPrint('🔄 Will retry after delay...');
+          }
         }
       }
       
@@ -495,13 +566,13 @@ class SpeechRecognitionService {
   }
 
   /// Check pronunciation accuracy
-  static PronunciationResult checkPronunciation({
+  static SpeechPronunciationResult checkPronunciation({
     required String expectedText,
     required String recognizedText,
     double threshold = 0.7,
   }) {
     if (recognizedText.isEmpty) {
-      return PronunciationResult(
+      return SpeechPronunciationResult(
         expectedText: expectedText,
         recognizedText: recognizedText,
         accuracy: 0.0,
@@ -535,7 +606,7 @@ class SpeechRecognitionService {
       feedback = 'Keep practicing! You can do it! 🌟';
     }
 
-    return PronunciationResult(
+    return SpeechPronunciationResult(
       expectedText: expectedText,
       recognizedText: recognizedText,
       accuracy: accuracy,
@@ -547,6 +618,29 @@ class SpeechRecognitionService {
   /// Get locale for language
   static String _getLocaleForLanguage(String languageCode) {
     return _languageLocales[languageCode.toLowerCase()] ?? 'en-US';
+  }
+
+  /// Get friendly language name from locale code
+  static String _getLanguageName(String localeId) {
+    // Normalize to hyphen format for lookup
+    final normalizedId = localeId.replaceAll('_', '-');
+    
+    const Map<String, String> localeNames = {
+      'hi-IN': 'Hindi',
+      'en-IN': 'English (India)',
+      'en-US': 'English (US)',
+      'en-AU': 'English (Australia)',
+      'en-GB': 'English (UK)',
+      'gu-IN': 'Gujarati',
+      'bn-IN': 'Bengali',
+      'ta-IN': 'Tamil',
+      'te-IN': 'Telugu',
+      'mr-IN': 'Marathi',
+      'kn-IN': 'Kannada',
+      'ml-IN': 'Malayalam',
+      'pa-IN': 'Punjabi',
+    };
+    return localeNames[normalizedId] ?? localeId;
   }
 
   /// Clean text for comparison

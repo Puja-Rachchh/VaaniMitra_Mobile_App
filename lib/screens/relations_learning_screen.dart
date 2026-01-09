@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
+import '../services/speech_recognition_service.dart';
+import '../services/pronunciation_service.dart' as pron_service;
 import '../widgets/quiz_widget.dart';
 import '../screens/quiz_results_screen.dart';
 import '../models/quiz_models.dart';
@@ -22,6 +23,13 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
   List<Map<String, String>> relations = [];
   bool isLoading = true;
   String? translatedDescription;
+  
+  // Pronunciation practice variables
+  bool _speechInitialized = false;
+  bool _isListening = false;
+  String _recognizedText = '';
+  pron_service.PronunciationResult? _pronunciationResult;
+  bool _showPronunciationFeedback = false;
 
   // Relations data with images and English names
   final List<Map<String, String>> relationsData = [
@@ -47,11 +55,13 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+    _initializeSpeechRecognition();
   }
 
   @override
   void dispose() {
     TextToSpeechService.stop();
+    SpeechRecognitionService.dispose();
     super.dispose();
   }
 
@@ -127,6 +137,9 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
         setState(() {
           currentRelationIndex++;
           translatedDescription = null;
+          _recognizedText = '';
+          _pronunciationResult = null;
+          _showPronunciationFeedback = false;
         });
       }
       _loadRelationDescription();
@@ -139,6 +152,9 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
         setState(() {
           currentRelationIndex--;
           translatedDescription = null;
+          _recognizedText = '';
+          _pronunciationResult = null;
+          _showPronunciationFeedback = false;
         });
       }
       _loadRelationDescription();
@@ -185,6 +201,207 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
       default:
         return GoogleFonts.poppins(fontSize: fontSize, fontWeight: FontWeight.w600);
     }
+  }
+
+  // Speech recognition methods
+  Future<void> _initializeSpeechRecognition() async {
+    debugPrint('RelationsLearningScreen: Initializing speech recognition...');
+    try {
+      final initialized = await SpeechRecognitionService.initialize();
+      debugPrint('RelationsLearningScreen: Speech recognition initialization result: $initialized');
+      if (mounted) {
+        setState(() {
+          _speechInitialized = initialized;
+        });
+      }
+      if (initialized) {
+        debugPrint('RelationsLearningScreen: Speech recognition initialized successfully');
+      } else {
+        debugPrint('RelationsLearningScreen: Speech recognition initialization failed');
+      }
+    } catch (e) {
+      debugPrint('RelationsLearningScreen: Error initializing speech recognition: $e');
+      if (mounted) {
+        setState(() {
+          _speechInitialized = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _startListening() async {
+    debugPrint('RelationsLearningScreen: Attempting to start listening...');
+    
+    if (!_speechInitialized) {
+      debugPrint('RelationsLearningScreen: Speech not initialized, attempting reinitialization...');
+      await _initializeSpeechRecognition();
+      if (!_speechInitialized) {
+        _showErrorMessage('Speech recognition not available. Please check permissions.');
+        return;
+      }
+    }
+    
+    if (targetLanguage == null) {
+      debugPrint('RelationsLearningScreen: Target language is null');
+      _showErrorMessage('Target language not set');
+      return;
+    }
+    
+    setState(() {
+      _recognizedText = '';
+      _pronunciationResult = null;
+      _showPronunciationFeedback = false;
+      _isListening = true;
+    });
+
+    try {
+      debugPrint('RelationsLearningScreen: Starting speech recognition for language: $targetLanguage');
+      final success = await SpeechRecognitionService.startListening(
+        languageCode: targetLanguage!,
+        onResult: (text) {
+          debugPrint('RelationsLearningScreen: Recognized text: $text');
+          if (mounted) {
+            setState(() {
+              _recognizedText = text;
+            });
+            // Check pronunciation immediately if we have recognized text
+            if (text.isNotEmpty && !_isListening) {
+              _checkPronunciation();
+            }
+          }
+        },
+        onListening: (isListening) {
+          debugPrint('🎤 Listening state: $isListening');
+          if (mounted) {
+            setState(() {
+              _isListening = isListening;
+            });
+            // Check pronunciation when listening stops and we have text
+            if (!isListening && _recognizedText.isNotEmpty) {
+              _checkPronunciation();
+            }
+          }
+        },
+        onError: (message) {
+          debugPrint('⚠️ Speech recognition warning: $message');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
+        timeout: const Duration(seconds: 10),
+      );
+
+      if (!success) {
+        debugPrint('RelationsLearningScreen: Failed to start speech recognition');
+        if (mounted) {
+          setState(() {
+            _isListening = false;
+          });
+        }
+        _showErrorMessage('Failed to start speech recognition. Please try again or check device settings.');
+      }
+    } catch (e) {
+      debugPrint('RelationsLearningScreen: Error starting speech recognition: $e');
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+      }
+      _showErrorMessage('Speech recognition error: ${e.toString()}');
+    }
+  }
+
+  Future<void> _stopListening() async {
+    try {
+      await SpeechRecognitionService.stopListening();
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+        if (_recognizedText.isNotEmpty) {
+          _checkPronunciation();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error stopping speech recognition: $e');
+    }
+  }
+
+  void _checkPronunciation() {
+    if (_recognizedText.isEmpty || currentRelationIndex >= relations.length) return;
+
+    final expectedWord = relations[currentRelationIndex]['targetName']!;
+    final result = pron_service.PronunciationService.evaluate(
+      expectedWord,
+      _recognizedText,
+    );
+
+    setState(() {
+      _pronunciationResult = result;
+      _showPronunciationFeedback = true;
+    });
+  }
+
+  void _showErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Widget _buildPronunciationFeedback() {
+    if (!_showPronunciationFeedback || _pronunciationResult == null) {
+      return const SizedBox.shrink();
+    }
+
+    final result = _pronunciationResult!;
+    final color = result.isCorrect ? Colors.green : Colors.orange;
+
+    return Card(
+      elevation: 4,
+      color: color.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Icon(
+              result.isCorrect ? Icons.check_circle : Icons.info,
+              color: color,
+              size: 40,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              result.feedback,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Accuracy: ${(result.score * 100).toStringAsFixed(0)}%',
+              style: TextStyle(fontSize: 16, color: color.shade600),
+            ),
+            if (_recognizedText.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'You said: $_recognizedText',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   // Quiz navigation methods
@@ -429,6 +646,62 @@ class _RelationsLearningScreenState extends State<RelationsLearningScreen> {
               ),
             ),
             const SizedBox(height: 30),
+            
+            // Pronunciation practice section
+            if (_speechInitialized) ...[
+              Card(
+                elevation: 3,
+                color: Colors.purple.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.mic, color: Colors.purple.shade600),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Pronunciation Practice',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Tap the button and say: ${relations[currentRelationIndex]['targetName']}',
+                        style: const TextStyle(fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _isListening ? _stopListening : _startListening,
+                        icon: Icon(_isListening ? Icons.stop : Icons.mic),
+                        label: Text(_isListening ? 'Stop Listening' : 'Start Practice'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isListening ? Colors.red : Colors.purple.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                      if (_isListening) ...[
+                        const SizedBox(height: 12),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 8),
+                        const Text('Listening...', style: TextStyle(color: Colors.red)),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildPronunciationFeedback(),
+              const SizedBox(height: 20),
+            ],
             
             // Description
             if (translatedDescription != null)

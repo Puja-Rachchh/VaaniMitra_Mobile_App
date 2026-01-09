@@ -42,6 +42,8 @@ dependencies:
   speech_to_text: ^7.3.0
   permission_handler: ^11.3.1
   string_similarity: ^2.0.0
+  # MongoDB for translations database
+  mongo_dart: ^0.10.3
 
 dev_dependencies:
   flutter_test:

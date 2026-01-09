@@ -9,8 +9,20 @@ import 'screens/furniture_learning_screen.dart';
 import 'screens/places_learning_screen.dart';
 import 'screens/professionals_learning_screen.dart';
 import 'screens/relations_learning_screen.dart';
+import 'screens/letter_tracing_screen.dart';
+import 'services/translation_service.dart';
+// import 'utils/populate_mongodb.dart'; // Uncomment when needed
 
-void main() {
+void main() async {
+  // Ensure Flutter bindings are initialized before async operations
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize MongoDB connection for translations
+  await TranslationService.initialize();
+  
+  // UNCOMMENT THE LINE BELOW TO POPULATE DATABASE (run once, then comment out again)
+  // await MongoDBPopulator.populateTranslations();
+  
   runApp(const VaaniMitraApp());
 }
 

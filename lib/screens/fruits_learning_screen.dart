@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/translation_service.dart';
 import '../services/user_preferences.dart';
 import '../services/text_to_speech_service.dart';
+import '../services/speech_recognition_service.dart';
+import '../services/pronunciation_service.dart' as pron_service;
 import '../widgets/quiz_widget.dart';
 import '../screens/quiz_results_screen.dart';
 import '../models/quiz_models.dart';
@@ -21,6 +23,13 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
   List<Map<String, String>> fruits = [];
   bool isLoading = true;
   String? translatedDescription;
+  
+  // Pronunciation practice variables
+  bool _speechInitialized = false;
+  bool _isListening = false;
+  String _recognizedText = '';
+  pron_service.PronunciationResult? _pronunciationResult;
+  bool _showPronunciationFeedback = false;
 
   // Fruits data with images and English names
   final List<Map<String, String>> fruitsData = [
@@ -45,11 +54,13 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+    _initializeSpeechRecognition();
   }
 
   @override
   void dispose() {
     TextToSpeechService.stop();
+    SpeechRecognitionService.dispose();
     super.dispose();
   }
 
@@ -123,6 +134,9 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
         setState(() {
           currentFruitIndex++;
           translatedDescription = null;
+          _recognizedText = '';
+          _pronunciationResult = null;
+          _showPronunciationFeedback = false;
         });
       }
       _loadFruitDescription();
@@ -135,6 +149,9 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
         setState(() {
           currentFruitIndex--;
           translatedDescription = null;
+          _recognizedText = '';
+          _pronunciationResult = null;
+          _showPronunciationFeedback = false;
         });
       }
       _loadFruitDescription();
@@ -179,6 +196,200 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
       default:
         return GoogleFonts.notoSans(fontSize: fontSize, fontWeight: FontWeight.bold);
     }
+  }
+
+  // Speech recognition methods
+  Future<void> _initializeSpeechRecognition() async {
+    try {
+      debugPrint('🎤 Fruits Screen: Starting speech recognition initialization...');
+      final initialized = await SpeechRecognitionService.initialize();
+      debugPrint('🎤 Fruits Screen: Initialization result: $initialized');
+      if (mounted) {
+        setState(() {
+          _speechInitialized = initialized;
+        });
+        if (!initialized) {
+          debugPrint('❌ Fruits Screen: Speech recognition failed to initialize');
+        } else {
+          debugPrint('✅ Fruits Screen: Speech recognition ready!');
+        }
+      }
+    } catch (e) {
+      debugPrint('💥 Fruits Screen: Error initializing speech recognition: $e');
+      if (mounted) {
+        setState(() {
+          _speechInitialized = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _startListening() async {
+    if (!_speechInitialized) {
+      _showErrorMessage('Speech recognition not initialized. Please wait or restart the app.');
+      // Try to initialize again
+      await _initializeSpeechRecognition();
+      if (!_speechInitialized) {
+        return;
+      }
+    }
+    
+    if (targetLanguage == null) {
+      _showErrorMessage('Target language not set');
+      return;
+    }
+    
+    setState(() {
+      _recognizedText = '';
+      _pronunciationResult = null;
+      _showPronunciationFeedback = false;
+      _isListening = true;
+    });
+
+    try {
+      debugPrint('🎤 Starting listening for language: $targetLanguage');
+      final success = await SpeechRecognitionService.startListening(
+        languageCode: targetLanguage!,
+        onResult: (text) {
+          debugPrint('🎤 Received text: $text');
+          if (mounted) {
+            setState(() {
+              _recognizedText = text;
+            });
+            // Check pronunciation immediately if we have recognized text
+            if (text.isNotEmpty && !_isListening) {
+              _checkPronunciation();
+            }
+          }
+        },
+        onListening: (isListening) {
+          debugPrint('🎤 Listening state: $isListening');
+          if (mounted) {
+            setState(() {
+              _isListening = isListening;
+            });
+            // Check pronunciation when listening stops and we have text
+            if (!isListening && _recognizedText.isNotEmpty) {
+              _checkPronunciation();
+            }
+          }
+        },
+        onError: (message) {
+          debugPrint('⚠️ Speech recognition warning: $message');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
+        timeout: const Duration(seconds: 10),
+      );
+
+      debugPrint('🎤 startListening returned: $success');
+      if (!success) {
+        setState(() {
+          _isListening = false;
+        });
+        _showErrorMessage('Failed to start speech recognition. Please try again or check device settings.');
+      }
+    } catch (e) {
+      debugPrint('💥 Error starting speech recognition: $e');
+      setState(() {
+        _isListening = false;
+      });
+      _showErrorMessage('Error: $e');
+    }
+  }
+
+  Future<void> _stopListening() async {
+    try {
+      await SpeechRecognitionService.stopListening();
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+        });
+        if (_recognizedText.isNotEmpty) {
+          _checkPronunciation();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error stopping speech recognition: $e');
+    }
+  }
+
+  void _checkPronunciation() {
+    if (_recognizedText.isEmpty || currentFruitIndex >= fruits.length) return;
+
+    final expectedWord = fruits[currentFruitIndex]['targetName']!;
+    final result = pron_service.PronunciationService.evaluate(
+      expectedWord,
+      _recognizedText,
+    );
+
+    setState(() {
+      _pronunciationResult = result;
+      _showPronunciationFeedback = true;
+    });
+  }
+
+  void _showErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Widget _buildPronunciationFeedback() {
+    if (!_showPronunciationFeedback || _pronunciationResult == null) {
+      return const SizedBox.shrink();
+    }
+
+    final result = _pronunciationResult!;
+    final color = result.isCorrect ? Colors.green : Colors.orange;
+
+    return Card(
+      elevation: 4,
+      color: color.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Icon(
+              result.isCorrect ? Icons.check_circle : Icons.info,
+              color: color,
+              size: 40,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              result.feedback,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Accuracy: ${(result.score * 100).toStringAsFixed(0)}%',
+              style: TextStyle(fontSize: 16, color: color.shade600),
+            ),
+            if (_recognizedText.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'You said: $_recognizedText',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   // Quiz navigation methods
@@ -436,6 +647,87 @@ class _FruitsLearningScreenState extends State<FruitsLearningScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+
+            // Pronunciation practice section
+            Card(
+              elevation: 3,
+              color: _speechInitialized ? Colors.purple.shade50 : Colors.grey.shade100,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _speechInitialized ? Icons.mic : Icons.mic_off,
+                          color: _speechInitialized ? Colors.purple.shade600 : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pronunciation Practice',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _speechInitialized ? Colors.purple.shade700 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (!_speechInitialized) ...[
+                      const Text(
+                        '⚠️ Speech recognition is not available',
+                        style: TextStyle(fontSize: 14, color: Colors.orange),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Please check:\n• Microphone permissions are granted\n• Device supports speech recognition\n• Internet connection is active',
+                        style: TextStyle(fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _initializeSpeechRecognition,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry Initialization'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'Tap the button and say: ${fruits[currentFruitIndex]['targetName']}',
+                        style: const TextStyle(fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _isListening ? _stopListening : _startListening,
+                        icon: Icon(_isListening ? Icons.stop : Icons.mic),
+                        label: Text(_isListening ? 'Stop Listening' : 'Start Practice'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isListening ? Colors.red : Colors.purple.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                      if (_isListening) ...[
+                        const SizedBox(height: 12),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 8),
+                        const Text('Listening...', style: TextStyle(color: Colors.red)),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildPronunciationFeedback(),
             const SizedBox(height: 20),
 
             // Description

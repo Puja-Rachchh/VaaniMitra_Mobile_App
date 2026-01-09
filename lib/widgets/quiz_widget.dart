@@ -22,7 +22,7 @@ class _QuizWidgetState extends State<QuizWidget>
     with TickerProviderStateMixin {
   List<QuizQuestion> _questions = [];
   int _currentQuestionIndex = 0;
-  List<QuizResult> _results = [];
+  final List<QuizResult> _results = [];
   bool _isLoading = true;
   bool _showAnswer = false;
   String? _selectedAnswer;
