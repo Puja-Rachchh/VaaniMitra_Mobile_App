@@ -20,7 +20,7 @@ Offline Fallback (last resort) 📖
 
 **Connection String:**
 ```
-mongodb+srv://pujarachchh:FWcrDD77m3tAh9zQ@cluster0.m9pcbed.mongodb.net/
+mongo_URL
 ```
 
 **Database:** `vaanimitra`  
@@ -36,7 +36,7 @@ mongodb+srv://pujarachchh:FWcrDD77m3tAh9zQ@cluster0.m9pcbed.mongodb.net/
 
 ### Using MongoDB Shell
 ```bash
-mongosh "mongodb+srv://pujarachchh:FWcrDD77m3tAh9zQ@cluster0.m9pcbed.mongodb.net/"
+mongosh "MONGO_DB_URL"
 use vaanimitra
 db.translations.find().limit(10)
 ```
